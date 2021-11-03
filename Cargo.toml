@@ -1,0 +1,20 @@
+[package]
+name = "worker-pod"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+twilight-cache-inmemory = "0.7.1"
+twilight-gateway = "0.7.1"
+twilight-http = "0.7.1"
+twilight-model = "0.7.1"
+twilight-util = "0.7.0"
+twilight-standby = "0.7.1"
+
+tokio = {version = "1.13.0", features = ["full"]}
+futures = "0.3.17"
+async-trait = "0.1.51"
+mongodb = "2.0.1"
+serde = {version = "1.0.130", features = ["derive"]}
