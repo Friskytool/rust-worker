@@ -1,2 +1,1 @@
-use mongodb::{Client, options::ClientOptions};
-
+use mongodb::{options::ClientOptions, Client};
