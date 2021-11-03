@@ -1,8 +1,8 @@
 use crate::core::prelude::*;
 use crate::Context;
-use tracing::{event, Level};
 use futures::stream::{Stream, StreamExt};
 use std::error::Error;
+use tracing::{event, Level};
 use twilight_cache_inmemory::model::{CachedMember, CachedMessage};
 use twilight_gateway::cluster::Events;
 use twilight_gateway::Event;
