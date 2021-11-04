@@ -1,30 +1,22 @@
-#[macro_use]
-extern crate async_trait;
+#[macro_use] extern crate async_trait;
 
 extern crate deadpool_redis;
 extern crate dotenv;
 extern crate tracing;
-
-use futures::stream::StreamExt;
-use std::{env, error::Error, sync::Arc};
-use twilight_cache_inmemory::{InMemoryCache, ResourceType};
-use twilight_gateway::{
-    cluster::{Cluster, ShardScheme},
-    Event,
-};
-use twilight_http::Client as HttpClient;
 use twilight_model::gateway::Intents;
+use crate::core::prelude::*;
 
 mod context;
 mod core;
 mod db;
 mod model;
 mod worker;
+mod plugins;
 
 pub use context::Context;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn main() -> Result<()> {
     let subscriber = tracing_subscriber::fmt().with_target(false).finish();
 
     tracing::subscriber::set_global_default(subscriber)

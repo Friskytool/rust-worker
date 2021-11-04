@@ -1,9 +1,6 @@
 use crate::core::prelude::*;
 use crate::Context;
-use futures::stream::{Stream, StreamExt};
-use std::error::Error;
-use tracing::{event, Level};
-use twilight_cache_inmemory::model::{CachedMember, CachedMessage};
+use futures::stream::{StreamExt};
 use twilight_gateway::cluster::Events;
 use twilight_gateway::Event;
 
@@ -31,10 +28,10 @@ async fn handle_event(
     shard_id: u64,
     event: Event,
     ctx: Context,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let (cache, http) = {
+) -> Result<()> {
+    let (_cache, http, _plugin_config) = {
         let c = ctx.clone();
-        (c.cache, c.http)
+        (c.cache, c.http, c.plugin_config)
     };
 
     match event {
@@ -42,7 +39,7 @@ async fn handle_event(
             let channel_id = message.channel_id;
             let message_id = message.id;
             if message.content == "s.ping" {
-                ctx.http
+                http
                     .create_message(channel_id)
                     .reply(message_id)
                     .content("pong")?

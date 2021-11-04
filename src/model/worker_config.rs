@@ -1,6 +1,4 @@
 use serde::Deserialize;
-use std::net::IpAddr;
-use std::sync::Arc;
 
 use crate::core::Result;
 
@@ -8,9 +6,10 @@ use crate::core::Result;
 pub struct WorkerConfig {
     pub discord_token: String,
     pub application_id: u64,
-    pub database_url: String,
-    pub database_port: u16,
-    //pub redis: deadpool_redis::Config,
+    pub mongo_uri: String,
+
+    #[serde(default)]
+    pub redis: deadpool_redis::Config,
 }
 
 impl WorkerConfig {
@@ -24,9 +23,8 @@ impl WorkerConfig {
 
         let mut cfg = config::Config::new();
 
-        cfg.set_default("database_url", "localhost")?
-            .set_default("database_port", "27017")?;
-
+        cfg.set_default("mongo_uri", "mongodb://localhost:27017")?;
+        
         cfg.merge(config::Environment::new())?;
 
         cfg.try_into().map_err(Into::into)

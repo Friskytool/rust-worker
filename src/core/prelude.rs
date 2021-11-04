@@ -1,18 +1,16 @@
+pub use tracing::{event, Level};
+use std::result::Result as StdResult;
 pub use serde::{Deserialize, Serialize};
 pub use twilight_model::id::{ChannelId, GuildId, RoleId, UserId};
-
-pub const WEEK: usize = 60 * 60 * 24 * 7;
-pub const DAY: usize = 60 * 60 * 24;
-pub const HOUR: usize = 60 * 60;
-pub const MIN: usize = 60;
-
-pub const MESSAGE_CACHE: usize = 100;
-pub const SLICE_SIZE: usize = 65535;
-pub const USER_SLICE_SIZE: usize = 65535 / 5;
-
+pub use twilight_gateway::Event;
+#[allow(dead_code)]
 pub mod colors {
     pub const MAIN: u32 = 0x5da9ff;
     pub const BLUE: u32 = 0x6969ff;
     pub const RED: u32 = 0xff4040;
     pub const GREEN: u32 = 0x00ff7f;
 }
+
+pub use crate::core::error::Error;
+pub type Result<T> = StdResult<T, Error>;
+pub use crate::Context;
