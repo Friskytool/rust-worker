@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::core::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct GuildPluginConfig {

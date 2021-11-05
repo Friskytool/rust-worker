@@ -1,18 +1,19 @@
-#[macro_use] extern crate async_trait;
+#[macro_use]
+extern crate async_trait;
 
 extern crate deadpool_redis;
 extern crate dotenv;
 extern crate tracing;
-use twilight_model::gateway::Intents;
 use crate::core::prelude::*;
 use std::sync::Arc;
+use twilight_model::gateway::Intents;
 
 mod context;
 mod core;
 mod db;
 mod model;
-mod worker;
 mod plugins;
+mod worker;
 
 pub use context::Context;
 
@@ -36,15 +37,9 @@ async fn main() -> Result<()> {
 
     // Use intents to only receive guild message events.
 
-    let plugins: Vec<Box<dyn core::Plugin>> = vec![
-        Box::new(plugins::MessageCounting())
-    ];
-    let plugins: Arc<Vec<_>> = Arc::new(
-			plugins.into_iter()
-				.map(|m| Arc::new(m))
-				.collect()
-		);
-        
+    let plugins: Vec<Box<dyn core::Plugin>> = vec![Box::new(plugins::MessageCounting())];
+    let plugins: Arc<Vec<_>> = Arc::new(plugins.into_iter().map(|m| Arc::new(m)).collect());
+
     let mut worker = worker::Worker::new(config, plugins, intents).await;
 
     worker.start().await;

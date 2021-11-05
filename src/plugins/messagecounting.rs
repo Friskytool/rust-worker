@@ -1,12 +1,11 @@
 use crate::core::prelude::*;
-use crate::core::{Plugin};
+use crate::core::Plugin;
 
 #[derive(Clone, Debug)]
 pub struct MessageCounting();
 
 #[async_trait]
 impl Plugin for MessageCounting {
-
     fn name(&self) -> String {
         "MessageCounting".to_string()
     }
