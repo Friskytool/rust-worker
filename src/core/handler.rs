@@ -3,7 +3,7 @@ use crate::Context;
 use futures::stream::{StreamExt};
 use twilight_gateway::cluster::Events;
 use twilight_gateway::Event;
-
+use std::sync::Arc;
 pub struct EventHandler {
     events: Events,
     ctx: Context,
@@ -29,27 +29,28 @@ async fn handle_event(
     event: Event,
     ctx: Context,
 ) -> Result<()> {
-    let (_cache, http, _plugin_config) = {
+    let plugin_config = {
         let c = ctx.clone();
-        (c.cache, c.http, c.plugin_config)
+        c.plugin_config
     };
 
-    match event {
+    match &event {
         Event::MessageCreate(message) => {
-            let channel_id = message.channel_id;
-            let message_id = message.id;
-            if message.content == "s.ping" {
-                http
-                    .create_message(channel_id)
-                    .reply(message_id)
-                    .content("pong")?
-                    .exec()
-                    .await?;
-            }
-        }
+            if let Some(guild_id) = message.guild_id {
+                let plugins: Vec<Arc<Box<dyn Plugin>>> =  {
+                    let r1 = plugin_config.read().await;
+
+                    r1.get_plugins(guild_id).await
+                };
+                event!(Level::INFO, "Got Plugins: ({:#?}) in {}", plugins, guild_id);
+
+                for plugin in plugins.iter() {
+                    plugin.on_event(event.clone(), ctx.clone()).await;
+                }
+            }        }
 
         Event::ShardConnected(_) => {
-            println!("Connected on shard {}", shard_id);
+            event!(Level::INFO, "Connected on shard {}", shard_id);
         }
 
         _ => {}

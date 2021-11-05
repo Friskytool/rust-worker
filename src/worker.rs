@@ -2,7 +2,8 @@ use crate::context::Context;
 use crate::core::EventHandler;
 use crate::model::{WorkerConfig, PluginConfig};
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc};
+use tokio::sync::RwLock;
 use tracing::{event, Level};
 use twilight_cache_inmemory::{InMemoryCache};
 use twilight_gateway::{
@@ -14,6 +15,7 @@ use twilight_model::gateway::Intents;
 // Databases
 use crate::db::{MongoClient, MongoClientOptions};
 use deadpool_redis::Runtime;
+use crate::core::prelude::*;
 
 #[non_exhaustive]
 pub struct Worker {
@@ -23,14 +25,14 @@ pub struct Worker {
 }
 
 impl Worker {
-    pub async fn new(config: WorkerConfig, intents: Intents) -> Self {
+    pub async fn new(config: WorkerConfig, plugins: Arc<Vec<Arc<Box<dyn Plugin>>>>, intents: Intents) -> Self {
         let http = Arc::new(HttpClient::new(config.discord_token.clone()));
         let cache = Arc::new(InMemoryCache::new());
         
         // Setting up MongoDB Connection
         let mongo_options = MongoClientOptions::parse(&config.mongo_uri).await.expect("Failed to parse mongo uri into connection options");
         let mongo_client = Arc::new(MongoClient::with_options(mongo_options).expect("Failed to create MongoClient"));
-
+        let mongo_db  = mongo_client.database("Main");
         // Setting up Redis connection
         let redis_pool = config.redis.create_pool(Some(Runtime::Tokio1)).expect("Failed to create Redis pool");
         let redis_pool = Arc::new(redis_pool);
@@ -63,8 +65,11 @@ impl Worker {
             .await
             .unwrap_or_else(|err| panic!("Unabled to setup cluster: {}", err));
         let cluster = Arc::new(cluster);
-        let plugin_config = Arc::new(PluginConfig::new(mongo_client.clone()));
+
         
+        let plugin_config = PluginConfig::new(plugins);
+        let plugin_config = Arc::new(RwLock::new(plugin_config));
+
         let ctx = Context {
             cache,
             cluster,
@@ -72,9 +77,15 @@ impl Worker {
             user,
             owners,
             mongo_client: mongo_client,
+            db: mongo_db,
             redis_pool: redis_pool,
-            plugin_config: plugin_config
+            plugin_config: plugin_config.clone()
         };
+        {
+            let mut p_config = plugin_config.write().await;
+            p_config.load_cache(ctx.clone()).await.expect("Failed to load plugin config cache");
+        }
+        
 
         let handler = EventHandler::new(ctx.clone(), events);
 

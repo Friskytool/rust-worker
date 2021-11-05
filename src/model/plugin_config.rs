@@ -1,37 +1,47 @@
 use twilight_model::id::GuildId;
 use std::collections::HashMap;
-use mongodb::Client;
 use std::sync::Arc;
 use crate::core::prelude::*;
 use crate::db::models::*;
 use futures::stream::{TryStreamExt};
+use deadpool_redis::redis::cmd;
 
-#[derive(Clone)]
 pub struct PluginConfig {
-    plugins: HashMap<GuildId, Vec<String>>,
-    mongo_client: Arc<Client>
+    plugins: Arc<Vec<Arc<Box<dyn Plugin>>>>,
+    plugin_cache: HashMap<GuildId, Vec<String>>
 }
 
 impl PluginConfig {
-    pub fn new(mongo_client: Arc<Client>) -> Self {
+    pub fn new(plugins: Arc<Vec<Arc<Box<dyn Plugin>>>>) -> Self {
         PluginConfig {
-            plugins: HashMap::new(),
-            mongo_client
+            plugins: plugins,
+            plugin_cache: HashMap::new()
         }
     }
     
-    pub async fn load_plugins(&mut self) -> Result<()> {
-        let db = self.mongo_client.database("main");
-        let collection = db.collection::<GuildPluginConfig>("Plugins");
+    pub async fn load_cache(&mut self, ctx: Context) -> Result<()> {
+        let collection = ctx.db.collection::<GuildPluginConfig>("Plugins");
 
         let mut cursor = collection.find(None, None).await?;
-
+        event!(Level::INFO, "Loading plugins");
         while let Some(plugin_config) = cursor.try_next().await? {
-            let guild_id = plugin_config.id;
-            let plugins = plugin_config.plugins;
-            self.plugins.insert(guild_id, plugins);
-            event!(Level::INFO, "Loading plugin..");
+            let guild_id = GuildId(plugin_config.id);
+        
+            event!(Level::INFO, "Recieved plugins guild {}: {}", guild_id, plugin_config.plugins.join(", "));
+            self.plugin_cache.insert(guild_id, plugin_config.plugins);
         }
         Ok(())
+    }
+
+    pub async fn get_plugins(&self, guild_id: GuildId) -> Vec<Arc<Box<dyn Plugin>>> {
+        let mut result : Vec<_> = Vec::new();
+        for plugin in self.plugins.iter() {
+            if self.plugin_cache.contains_key(&guild_id) {
+                if self.plugin_cache.get(&guild_id).unwrap().contains(&plugin.name()) {
+                    result.push(plugin.clone());
+                }
+            }
+        };
+        result
     }
 }

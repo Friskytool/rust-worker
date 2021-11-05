@@ -7,7 +7,7 @@ pub struct WorkerConfig {
     pub discord_token: String,
     pub application_id: u64,
     pub mongo_uri: String,
-
+    pub mongo_db: String,
     #[serde(default)]
     pub redis: deadpool_redis::Config,
 }

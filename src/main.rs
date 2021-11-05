@@ -5,6 +5,7 @@ extern crate dotenv;
 extern crate tracing;
 use twilight_model::gateway::Intents;
 use crate::core::prelude::*;
+use std::sync::Arc;
 
 mod context;
 mod core;
@@ -35,7 +36,16 @@ async fn main() -> Result<()> {
 
     // Use intents to only receive guild message events.
 
-    let mut worker = worker::Worker::new(config, intents).await;
+    let plugins: Vec<Box<dyn core::Plugin>> = vec![
+        Box::new(plugins::MessageCounting())
+    ];
+    let plugins: Arc<Vec<_>> = Arc::new(
+			plugins.into_iter()
+				.map(|m| Arc::new(m))
+				.collect()
+		);
+        
+    let mut worker = worker::Worker::new(config, plugins, intents).await;
 
     worker.start().await;
     Ok(())
