@@ -24,7 +24,7 @@ impl WorkerConfig {
         let mut cfg = config::Config::new();
 
         cfg.set_default("mongo_uri", "mongodb://localhost:27017")?;
-        
+
         cfg.merge(config::Environment::new())?;
 
         cfg.try_into().map_err(Into::into)

@@ -1,9 +1,9 @@
 use crate::core::prelude::*;
 use crate::Context;
-use futures::stream::{StreamExt};
+use futures::stream::StreamExt;
+use std::sync::Arc;
 use twilight_gateway::cluster::Events;
 use twilight_gateway::Event;
-use std::sync::Arc;
 pub struct EventHandler {
     events: Events,
     ctx: Context,
@@ -24,11 +24,7 @@ impl EventHandler {
     }
 }
 
-async fn handle_event(
-    shard_id: u64,
-    event: Event,
-    ctx: Context,
-) -> Result<()> {
+async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
     let plugin_config = {
         let c = ctx.clone();
         c.plugin_config
@@ -37,7 +33,7 @@ async fn handle_event(
     match &event {
         Event::MessageCreate(message) => {
             if let Some(guild_id) = message.guild_id {
-                let plugins: Vec<Arc<Box<dyn Plugin>>> =  {
+                let plugins: Vec<Arc<Box<dyn Plugin>>> = {
                     let r1 = plugin_config.read().await;
 
                     r1.get_plugins(guild_id).await
@@ -47,7 +43,8 @@ async fn handle_event(
                 for plugin in plugins.iter() {
                     plugin.on_event(event.clone(), ctx.clone()).await;
                 }
-            }        }
+            }
+        }
 
         Event::ShardConnected(_) => {
             event!(Level::INFO, "Connected on shard {}", shard_id);

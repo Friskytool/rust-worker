@@ -1,6 +1,6 @@
-use twilight_embed_builder::EmbedError;
-use std::error::Error as StdError;
 use mongodb::error::Error as MongoError;
+use std::error::Error as StdError;
+use twilight_embed_builder::EmbedError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -35,5 +35,7 @@ pub enum Error {
     TwilightHttpError(#[from] twilight_http::Error),
 
     #[error("TwilightHttp raised an error while creating a message.")]
-    TwilightMessageCreateFailed(#[from] twilight_http::request::prelude::create_message::CreateMessageError ),
+    TwilightMessageCreateFailed(
+        #[from] twilight_http::request::prelude::create_message::CreateMessageError,
+    ),
 }
