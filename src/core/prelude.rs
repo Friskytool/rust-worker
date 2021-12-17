@@ -15,5 +15,6 @@ pub use crate::core::error::Error;
 pub type Result<T> = StdResult<T, Error>;
 pub use crate::core::Plugin;
 pub use crate::Context;
+pub use mongodb::{bson, bson::doc};
 pub use std::sync::Arc;
 pub use tokio::sync::RwLock;

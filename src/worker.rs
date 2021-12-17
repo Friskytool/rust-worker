@@ -4,12 +4,12 @@ use crate::model::{PluginConfig, WorkerConfig};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use tokio::time::{sleep, Duration};
 use tracing::{event, Level};
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::cluster::{Cluster, ShardScheme};
 use twilight_http::Client as HttpClient;
 use twilight_model::gateway::Intents;
-
 // Databases
 use crate::core::prelude::*;
 use crate::db::{MongoClient, MongoClientOptions};
@@ -38,7 +38,7 @@ impl Worker {
         let mongo_client = Arc::new(
             MongoClient::with_options(mongo_options).expect("Failed to create MongoClient"),
         );
-        let mongo_db = mongo_client.database("Main");
+        let mongo_db = mongo_client.database(&config.mongo_db);
         // Setting up Redis connection
         let redis_pool = config
             .redis
@@ -108,17 +108,31 @@ impl Worker {
 
     pub async fn start(&mut self) {
         let cluster_spawn = self.ctx.cluster.clone();
-
         event!(Level::DEBUG, "Starting Cluster");
         let _cluster_handle = tokio::spawn(async move {
             cluster_spawn.up().await;
         });
 
+        let ctx = self.ctx.clone();
+        let _db_sync_handle = tokio::spawn(async move {
+            Worker::db_sync_handler(ctx).await;
+        });
         event!(Level::DEBUG, "Starting Event Handler");
         self.start_handler().await;
     }
 
     async fn start_handler(&mut self) {
         self.handler.start().await
+    }
+
+    async fn db_sync_handler(ctx: Context) {
+        loop {
+            sleep(Duration::from_secs(15)).await;
+            for plugin in ctx.plugin_config.read().await.plugins.iter() {
+                if let Err(why) = plugin.sync_db(&ctx).await {
+                    event!(Level::ERROR, "Failed to sync db: {:?}", why);
+                };
+            }
+        }
     }
 }

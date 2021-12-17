@@ -1,3 +1,4 @@
+use crate::core::prelude::*;
 use crate::Context;
 use twilight_gateway::Event;
 use twilight_gateway::Intents;
@@ -9,7 +10,11 @@ pub trait Plugin: std::fmt::Debug + Send + Sync {
         Intents::empty()
     }
 
-    async fn on_event(&self, event: Event, context: Context);
+    async fn on_event(&self, event: Event, context: Context) -> Result<()>;
 
-    fn name(&self) -> String;
+    async fn sync_db(&self, context: &Context) -> Result<()>;
+
+    fn name(&self) -> &'static str;
+
+    fn description(&self) -> &'static str;
 }

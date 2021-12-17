@@ -1,9 +1,9 @@
 use crate::core::prelude::*;
 use crate::Context;
 use futures::stream::StreamExt;
-use std::sync::Arc;
 use twilight_gateway::cluster::Events;
 use twilight_gateway::Event;
+use twilight_model::gateway::payload::incoming::*;
 pub struct EventHandler {
     events: Events,
     ctx: Context,
@@ -33,24 +33,180 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
     match &event {
         Event::MessageCreate(message) => {
             if let Some(guild_id) = message.guild_id {
-                let plugins: Vec<Arc<Box<dyn Plugin>>> = {
+                let plugins: Vec<_> = {
                     let r1 = plugin_config.read().await;
 
                     r1.get_plugins(guild_id).await
                 };
-                event!(Level::INFO, "Got Plugins: ({:#?}) in {}", plugins, guild_id);
+                event!(
+                    Level::DEBUG,
+                    "Got Plugins: ({:#?}) in {}",
+                    plugins,
+                    guild_id
+                );
 
                 for plugin in plugins.iter() {
-                    plugin.on_event(event.clone(), ctx.clone()).await;
+                    match plugin.on_event(event.clone(), ctx.clone()).await {
+                        Ok(()) => {}
+                        Err(e) => {
+                            event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                        }
+                    };
                 }
             }
         }
 
-        Event::ShardConnected(_) => {
-            event!(Level::INFO, "Connected on shard {}", shard_id);
+        // Guild Based events
+        Event::GuildUpdate(update_event) => {
+            let GuildUpdate(e) = *update_event.clone();
+            let guild_id = e.id;
+            let plugins: Vec<_> = {
+                let r1 = plugin_config.read().await;
+
+                r1.get_plugins(guild_id).await
+            };
+            event!(
+                Level::DEBUG,
+                "Got Plugins (guild update): ({:#?}) in {}",
+                plugins,
+                guild_id
+            );
+
+            for plugin in plugins.iter() {
+                match plugin.on_event(event.clone(), ctx.clone()).await {
+                    Ok(()) => {}
+                    Err(e) => {
+                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                    }
+                };
+            }
+        }
+        Event::GuildCreate(create_event) => {
+            let GuildCreate(e) = *create_event.clone();
+            let guild_id = e.id;
+            let plugins: Vec<_> = {
+                let r1 = plugin_config.read().await;
+
+                r1.get_plugins(guild_id).await
+            };
+            event!(
+                Level::DEBUG,
+                "Got Plugins (guild create): ({:#?}) in {}",
+                plugins,
+                guild_id
+            );
+
+            for plugin in plugins.iter() {
+                match plugin.on_event(event.clone(), ctx.clone()).await {
+                    Ok(()) => {}
+                    Err(e) => {
+                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                    }
+                };
+            }
+        }
+        Event::GuildDelete(delete_event) => {
+            let GuildDelete { id, unavailable: _ } = *delete_event.clone();
+            let plugins: Vec<_> = {
+                let r1 = plugin_config.read().await;
+
+                r1.get_plugins(id).await
+            };
+            event!(
+                Level::DEBUG,
+                "Got Plugins (guild delete): ({:#?}) in {}",
+                plugins,
+                id
+            );
+
+            for plugin in plugins.iter() {
+                match plugin.on_event(event.clone(), ctx.clone()).await {
+                    Ok(()) => {}
+                    Err(e) => {
+                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                    }
+                };
+            }
+        }
+        Event::MemberAdd(add_event) => {
+            let MemberAdd(e) = *add_event.clone();
+            let guild_id = e.guild_id;
+            let plugins: Vec<_> = {
+                let r1 = plugin_config.read().await;
+
+                r1.get_plugins(guild_id).await
+            };
+            event!(
+                Level::DEBUG,
+                "Got Plugins (member add): ({:#?}) in {}",
+                plugins,
+                guild_id
+            );
+
+            for plugin in plugins.iter() {
+                match plugin.on_event(event.clone(), ctx.clone()).await {
+                    Ok(()) => {}
+                    Err(e) => {
+                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                    }
+                };
+            }
+        }
+        Event::InviteCreate(create_event) => {
+            let guild_id = create_event.guild_id;
+            let plugins: Vec<_> = {
+                let r1 = plugin_config.read().await;
+
+                r1.get_plugins(guild_id).await
+            };
+            event!(
+                Level::DEBUG,
+                "Got Plugins (invite create): ({:#?}) in {}",
+                plugins,
+                guild_id
+            );
+
+            for plugin in plugins.iter() {
+                match plugin.on_event(event.clone(), ctx.clone()).await {
+                    Ok(()) => {}
+                    Err(e) => {
+                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                    }
+                };
+            }
+        }
+        Event::InviteDelete(delete_event) => {
+            let guild_id = delete_event.guild_id;
+            let plugins: Vec<_> = {
+                let r1 = plugin_config.read().await;
+
+                r1.get_plugins(guild_id).await
+            };
+            event!(
+                Level::DEBUG,
+                "Got Plugins (invite delete): ({:#?}) in {}",
+                plugins,
+                guild_id
+            );
+
+            for plugin in plugins.iter() {
+                match plugin.on_event(event.clone(), ctx.clone()).await {
+                    Ok(()) => {}
+                    Err(e) => {
+                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                    }
+                };
+            }
         }
 
-        _ => {}
+        Event::ShardConnected(_) => {
+            event!(Level::DEBUG, "Connected on shard {}", shard_id);
+        }
+
+        Event::MemberUpdate(_) => {}
+        n => {
+            event!(Level::DEBUG, "Unknown event: {:#?}", n);
+        }
     }
 
     Ok(())

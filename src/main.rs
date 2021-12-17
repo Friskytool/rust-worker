@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate async_trait;
-
 extern crate deadpool_redis;
 extern crate dotenv;
+extern crate redis;
 extern crate tracing;
 use crate::core::prelude::*;
 use std::sync::Arc;
@@ -19,8 +19,11 @@ pub use context::Context;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let subscriber = tracing_subscriber::fmt().with_target(false).finish();
-
+    // let subscriber = tracing_subscriber::fmt().with_target(false).finish();
+    let subscriber = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .compact()
+        .finish();
     tracing::subscriber::set_global_default(subscriber)
         .expect("Unable to set global default subscriber");
 
@@ -37,7 +40,11 @@ async fn main() -> Result<()> {
 
     // Use intents to only receive guild message events.
 
-    let plugins: Vec<Box<dyn core::Plugin>> = vec![Box::new(plugins::MessageCounting())];
+    let plugins: Vec<Box<dyn core::Plugin>> = vec![
+        Box::new(plugins::MessageCounting::default()),
+        Box::new(plugins::InviteCounting::default()),
+        Box::new(plugins::ServerIndexer()),
+    ];
     let plugins: Arc<Vec<_>> = Arc::new(plugins.into_iter().map(|m| Arc::new(m)).collect());
 
     let mut worker = worker::Worker::new(config, plugins, intents).await;

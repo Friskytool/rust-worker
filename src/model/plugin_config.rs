@@ -1,13 +1,12 @@
 use crate::core::prelude::*;
 use crate::db::models::*;
-use deadpool_redis::redis::cmd;
 use futures::stream::TryStreamExt;
 use std::collections::HashMap;
 use std::sync::Arc;
 use twilight_model::id::GuildId;
 
 pub struct PluginConfig {
-    plugins: Arc<Vec<Arc<Box<dyn Plugin>>>>,
+    pub plugins: Arc<Vec<Arc<Box<dyn Plugin>>>>,
     plugin_cache: HashMap<GuildId, Vec<String>>,
 }
 
@@ -40,14 +39,9 @@ impl PluginConfig {
 
     pub async fn get_plugins(&self, guild_id: GuildId) -> Vec<Arc<Box<dyn Plugin>>> {
         let mut result: Vec<_> = Vec::new();
-        for plugin in self.plugins.iter() {
-            if self.plugin_cache.contains_key(&guild_id) {
-                if self
-                    .plugin_cache
-                    .get(&guild_id)
-                    .unwrap()
-                    .contains(&plugin.name())
-                {
+        if let Some(plugins) = self.plugin_cache.get(&guild_id) {
+            for plugin_name in plugins {
+                if let Some(plugin) = self.plugins.iter().find(|p| p.name() == *plugin_name) {
                     result.push(plugin.clone());
                 }
             }

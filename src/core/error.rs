@@ -31,11 +31,20 @@ pub enum Error {
     #[error("MongoDB raised an error")]
     MongoError(#[from] MongoError),
 
+    #[error("Mongodb failed to serialize object")]
+    MongoSerializationFailed(#[from] mongodb::bson::ser::Error),
+
+    #[error("Mongodb failed to deserialize object")]
+    MongoDeserializationFailed(#[from] mongodb::bson::de::Error),
+
     #[error("TwilightHttp raised an error while generating an api request.")]
     TwilightHttpError(#[from] twilight_http::Error),
 
     #[error("TwilightHttp raised an error while creating a message.")]
     TwilightMessageCreateFailed(
-        #[from] twilight_http::request::prelude::create_message::CreateMessageError,
+        #[from] twilight_http::request::channel::message::create_message::CreateMessageError,
     ),
+
+    #[error("Failed to deserialize data from discord")]
+    DiscordDeserializeFailed(#[from] twilight_http::response::DeserializeBodyError),
 }
