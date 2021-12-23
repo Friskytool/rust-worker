@@ -1,4 +1,5 @@
 use crate::core::prelude::*;
+use bson::DateTime;
 use serde::{Deserialize, Serialize};
 use twilight_model::datetime::Timestamp;
 use twilight_model::invite::{Invite, InviteChannel, InviteGuild, InviteStageInstance, TargetType};
@@ -18,7 +19,6 @@ pub struct UserInviteStorage {
 
     pub regular: u32,
     pub fake: u32,
-    pub leaves: u32,
     pub bonus: u32,
 
     pub regular_data: Vec<MongoInvite>,
@@ -119,7 +119,7 @@ pub struct JoinStorage {
     pub guild_id: String,
     pub user_id: String,
     pub inviter_id: Option<String>,
-    pub timestamp: Timestamp,
+    pub timestamp: DateTime,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -127,5 +127,5 @@ pub struct LeaveStorage {
     pub doctype: String,
     pub guild_id: String,
     pub user_id: String,
-    pub timestamp: Timestamp,
+    pub timestamp: DateTime,
 }

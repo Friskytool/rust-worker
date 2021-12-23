@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate async_trait;
+extern crate date_time_parser;
 extern crate deadpool_redis;
 extern crate dotenv;
 extern crate redis;
@@ -43,6 +44,7 @@ async fn main() -> Result<()> {
     let plugins: Vec<Box<dyn core::Plugin>> = vec![
         Box::new(plugins::MessageCounting::default()),
         Box::new(plugins::InviteCounting::default()),
+        Box::new(plugins::DateTransformer::default()),
         Box::new(plugins::ServerIndexer()),
     ];
     let plugins: Arc<Vec<_>> = Arc::new(plugins.into_iter().map(|m| Arc::new(m)).collect());

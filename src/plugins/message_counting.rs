@@ -32,7 +32,7 @@ impl Plugin for MessageCounting {
                         if cache.contains_key(&message.author.id) {
                             let mut count = cache.get_mut(&message.author.id).unwrap();
                             *count += 1;
-                        } else { 
+                        } else {
                             cache.insert(message.author.id, 1);
                         }
                     } else {
@@ -54,8 +54,7 @@ impl Plugin for MessageCounting {
             let ctx = context.clone();
             ctx.db
         };
-
-        let coll = db.collection::<MessageCountingUserStorage>("message_counting");
+        let coll = db.collection::<MessageCountingUserStorage>("messages");
 
         for row in self.cache.iter() {
             let guild_id = row.key().clone();
@@ -65,7 +64,7 @@ impl Plugin for MessageCounting {
                 let user_id = g_row.key().clone();
                 let count = g_row.value().clone();
                 event!(
-                    Level::INFO,
+                    Level::DEBUG,
                     "Saving message count for user {} in guild {}",
                     user_id,
                     guild_id
@@ -79,10 +78,6 @@ impl Plugin for MessageCounting {
                     doc! {
                         "$inc": {
                             "count": count
-                        },
-                        "$setOnInsert":{
-                            "guild_id": guild_id.get().to_string(),
-                            "user_id": user_id.get().to_string(),
                         }
                     },
                     Some(FindOneAndUpdateOptions::builder().upsert(true).build()),

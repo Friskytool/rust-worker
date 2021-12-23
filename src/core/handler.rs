@@ -152,6 +152,29 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
                 };
             }
         }
+        Event::MemberRemove(remove_event) => {
+            let MemberRemove { guild_id, user: _ } = remove_event.clone();
+            let plugins: Vec<_> = {
+                let r1 = plugin_config.read().await;
+
+                r1.get_plugins(guild_id).await
+            };
+            event!(
+                Level::DEBUG,
+                "Got Plugins (member remove): ({:#?}) in {}",
+                plugins,
+                guild_id
+            );
+
+            for plugin in plugins.iter() {
+                match plugin.on_event(event.clone(), ctx.clone()).await {
+                    Ok(()) => {}
+                    Err(e) => {
+                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                    }
+                };
+            }
+        }
         Event::InviteCreate(create_event) => {
             let guild_id = create_event.guild_id;
             let plugins: Vec<_> = {
