@@ -19,8 +19,9 @@ impl PluginConfig {
     }
 
     pub async fn load_cache(&mut self, ctx: Context) -> Result<()> {
-        let collection = ctx.db.collection::<GuildPluginConfig>("Plugins");
+        let collection = ctx.db.collection::<GuildPluginConfig>("plugins");
 
+        println!("{:#?}", ctx.db.list_collection_names(doc! {}).await?);
         let mut cursor = collection.find(None, None).await?;
         event!(Level::INFO, "Loading plugins");
         while let Some(plugin_config) = cursor.try_next().await? {

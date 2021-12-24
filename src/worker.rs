@@ -14,6 +14,7 @@ use twilight_model::gateway::Intents;
 use crate::core::prelude::*;
 use crate::db::{MongoClient, MongoClientOptions};
 use deadpool_redis::Runtime;
+use mongodb::options::Compressor;
 
 #[non_exhaustive]
 pub struct Worker {
@@ -32,9 +33,14 @@ impl Worker {
         let cache = Arc::new(InMemoryCache::new());
 
         // Setting up MongoDB Connection
-        let mongo_options = MongoClientOptions::parse(&config.mongo_uri)
+        let mut mongo_options = MongoClientOptions::parse(&config.mongo_uri)
             .await
             .expect("Failed to parse mongo uri into connection options");
+
+        mongo_options.compressors = Some(vec![Compressor::Zstd {
+            level: Default::default(),
+        }]);
+
         let mongo_client = Arc::new(
             MongoClient::with_options(mongo_options).expect("Failed to create MongoClient"),
         );
@@ -127,7 +133,7 @@ impl Worker {
 
     async fn db_sync_handler(ctx: Context) {
         loop {
-            sleep(Duration::from_secs(15)).await;
+            sleep(Duration::from_secs(30)).await;
             for plugin in ctx.plugin_config.read().await.plugins.iter() {
                 if let Err(why) = plugin.sync_db(&ctx).await {
                     event!(Level::ERROR, "Failed to sync db: {:?}", why);
