@@ -90,9 +90,9 @@ impl Worker {
             http,
             user,
             owners,
-            mongo_client: mongo_client,
+            mongo_client,
             db: mongo_db,
-            redis_pool: redis_pool,
+            redis_pool,
             plugin_config: plugin_config.clone(),
         };
         {

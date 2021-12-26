@@ -101,7 +101,7 @@ impl From<Vec<Invite>> for GuildInviteStorage {
         Self {
             doctype: "invite_storage".to_string(),
             invites: invites.into_iter().map(Into::into).collect(),
-            guild_id: guild_id,
+            guild_id,
         }
     }
 }

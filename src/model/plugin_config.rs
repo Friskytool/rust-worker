@@ -13,7 +13,7 @@ pub struct PluginConfig {
 impl PluginConfig {
     pub fn new(plugins: Arc<Vec<Arc<Box<dyn Plugin>>>>) -> Self {
         PluginConfig {
-            plugins: plugins,
+            plugins,
             plugin_cache: HashMap::new(),
         }
     }
