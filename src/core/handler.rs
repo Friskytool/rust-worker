@@ -106,7 +106,7 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
             }
         }
         Event::GuildDelete(delete_event) => {
-            let GuildDelete { id, unavailable: _ } = *delete_event.clone();
+            let GuildDelete { id, .. } = *delete_event.clone();
             let plugins: Vec<_> = {
                 let r1 = plugin_config.read().await;
 
@@ -153,7 +153,7 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
             }
         }
         Event::MemberRemove(remove_event) => {
-            let MemberRemove { guild_id, user: _ } = remove_event.clone();
+            let MemberRemove { guild_id, .. } = remove_event.clone();
             let plugins: Vec<_> = {
                 let r1 = plugin_config.read().await;
 
