@@ -20,31 +20,28 @@ impl Plugin for MessageCounting {
     }
 
     async fn on_event(&self, event: Event, _ctx: Context) -> Result<()> {
-        match event {
-            Event::MessageCreate(message) => {
-                if message.author.bot {
-                    return Ok(());
-                }
-                if let Some(guild_id) = message.guild_id {
-                    if self.cache.contains_key(&guild_id) {
-                        let cache = self.cache.get_mut(&guild_id).unwrap();
+        if let Event::MessageCreate(message) = event {
+            if message.author.bot {
+                return Ok(());
+            }
+            if let Some(guild_id) = message.guild_id {
+                if self.cache.contains_key(&guild_id) {
+                    let cache = self.cache.get_mut(&guild_id).unwrap();
 
-                        if cache.contains_key(&message.author.id) {
-                            let mut count = cache.get_mut(&message.author.id).unwrap();
-                            *count += 1;
-                        } else {
-                            cache.insert(message.author.id, 1);
-                        }
+                    if cache.contains_key(&message.author.id) {
+                        let mut count = cache.get_mut(&message.author.id).unwrap();
+                        *count += 1;
                     } else {
-                        let cache = DashMap::new();
-
                         cache.insert(message.author.id, 1);
-
-                        self.cache.insert(guild_id, cache);
                     }
+                } else {
+                    let cache = DashMap::new();
+
+                    cache.insert(message.author.id, 1);
+
+                    self.cache.insert(guild_id, cache);
                 }
             }
-            _ => {}
         };
         Ok(())
     }
