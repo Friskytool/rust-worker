@@ -62,7 +62,7 @@ impl Plugin for InviteCounting {
 
                 let storage = coll
                         .find_one(doc! {"guild_id":member.guild_id.0.to_string(), "doctype":"invite_storage" }, None)
-                        .await?.unwrap_or( GuildInviteStorage {
+                        .await?.unwrap_or_else(|| GuildInviteStorage {
                             doctype: "invite_storage".to_string(),
                             guild_id: member.guild_id.0.to_string(),
                             invites: Vec::<MongoInvite>::new(),
