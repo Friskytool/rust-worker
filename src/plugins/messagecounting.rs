@@ -11,13 +11,10 @@ impl Plugin for MessageCounting {
     }
 
     async fn on_event(&self, event: Event, _ctx: Context) {
-        match event {
-            Event::MessageCreate(message) => {
-                if let Some(guild_id) = message.guild_id {
-                    event!(Level::INFO, "messagecounting - guild id: {}", guild_id);
-                }
+        if let Event::MessageCreate(message) = event {
+            if let Some(guild_id) = message.guild_id {
+                event!(Level::INFO, "messagecounting - guild id: {}", guild_id);
             }
-            _ => {}
         }
     }
 }
