@@ -49,7 +49,12 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
                     match plugin.on_event(event.clone(), ctx.clone()).await {
                         Ok(()) => {}
                         Err(e) => {
-                            event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                            event!(
+                                Level::ERROR,
+                                "error in plugin ({}): {:#?}",
+                                e,
+                                plugin.name()
+                            );
                         }
                     };
                 }
@@ -76,7 +81,12 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
                 match plugin.on_event(event.clone(), ctx.clone()).await {
                     Ok(()) => {}
                     Err(e) => {
-                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                        event!(
+                            Level::ERROR,
+                            "error in plugin ({}): {:#?}",
+                            e,
+                            plugin.name()
+                        );
                     }
                 };
             }
@@ -100,7 +110,12 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
                 match plugin.on_event(event.clone(), ctx.clone()).await {
                     Ok(()) => {}
                     Err(e) => {
-                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                        event!(
+                            Level::ERROR,
+                            "error in plugin ({}): {:#?}",
+                            e,
+                            plugin.name()
+                        );
                     }
                 };
             }
@@ -123,7 +138,12 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
                 match plugin.on_event(event.clone(), ctx.clone()).await {
                     Ok(()) => {}
                     Err(e) => {
-                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                        event!(
+                            Level::ERROR,
+                            "error in plugin ({}): {:#?}",
+                            e,
+                            plugin.name()
+                        );
                     }
                 };
             }
@@ -147,7 +167,12 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
                 match plugin.on_event(event.clone(), ctx.clone()).await {
                     Ok(()) => {}
                     Err(e) => {
-                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                        event!(
+                            Level::ERROR,
+                            "error in plugin ({}): {:#?}",
+                            e,
+                            plugin.name()
+                        );
                     }
                 };
             }
@@ -170,7 +195,12 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
                 match plugin.on_event(event.clone(), ctx.clone()).await {
                     Ok(()) => {}
                     Err(e) => {
-                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                        event!(
+                            Level::ERROR,
+                            "error in plugin ({}): {:#?}",
+                            e,
+                            plugin.name()
+                        );
                     }
                 };
             }
@@ -193,7 +223,12 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
                 match plugin.on_event(event.clone(), ctx.clone()).await {
                     Ok(()) => {}
                     Err(e) => {
-                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                        event!(
+                            Level::ERROR,
+                            "error in plugin ({}): {:#?}",
+                            e,
+                            plugin.name()
+                        );
                     }
                 };
             }
@@ -216,7 +251,12 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
                 match plugin.on_event(event.clone(), ctx.clone()).await {
                     Ok(()) => {}
                     Err(e) => {
-                        event!(Level::ERROR, "Error in plugin: {:#?}", e);
+                        event!(
+                            Level::ERROR,
+                            "error in plugin ({}): {:#?}",
+                            e,
+                            plugin.name()
+                        );
                     }
                 };
             }

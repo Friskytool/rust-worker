@@ -47,4 +47,7 @@ pub enum Error {
 
     #[error("Failed to deserialize data from discord")]
     DiscordDeserializeFailed(#[from] twilight_http::response::DeserializeBodyError),
+
+    #[error("Failed to convert to std number")]
+    ParseIntError(#[from] std::num::ParseIntError),
 }

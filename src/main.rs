@@ -30,6 +30,13 @@ async fn main() -> Result<()> {
 
     let config = model::WorkerConfig::from_env()?;
 
+    let _guard = sentry::init((
+        config.sentry_dsn_url.clone(),
+        sentry::ClientOptions {
+            release: sentry::release_name!(),
+            ..Default::default()
+        },
+    ));
     // This is the default scheme. It will automatically create as many
     // shards as is suggested by Discord.
     //let scheme = ShardScheme::Auto;
@@ -37,7 +44,9 @@ async fn main() -> Result<()> {
     let intents = Intents::all()
         ^ Intents::GUILD_PRESENCES
         ^ Intents::GUILD_MESSAGE_TYPING
-        ^ Intents::DIRECT_MESSAGE_TYPING;
+        ^ Intents::DIRECT_MESSAGE_TYPING
+        ^ Intents::DIRECT_MESSAGE_REACTIONS
+        ^ Intents::DIRECT_MESSAGES;
 
     // Use intents to only receive guild message events.
 
@@ -45,6 +54,7 @@ async fn main() -> Result<()> {
         Box::new(plugins::MessageCounting::default()),
         Box::new(plugins::InviteCounting::default()),
         Box::new(plugins::DateTransformer::default()),
+        Box::new(plugins::DankMemer::default()),
         Box::new(plugins::ServerIndexer()),
     ];
     let plugins: Arc<Vec<_>> = Arc::new(plugins.into_iter().map(|m| Arc::new(m)).collect());

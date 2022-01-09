@@ -10,6 +10,7 @@ pub struct WorkerConfig {
     pub mongo_db: String,
     #[serde(default)]
     pub redis: deadpool_redis::Config,
+    pub sentry_dsn_url: String,
 }
 
 impl WorkerConfig {

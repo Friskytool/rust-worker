@@ -1,13 +1,68 @@
 use crate::core::prelude::*;
 use bson::DateTime;
+use mongodb::bson::Uuid;
 use serde::{Deserialize, Serialize};
+use tokio::time::Duration as TokioDuration;
 use twilight_model::datetime::Timestamp;
+use twilight_model::id::*;
 use twilight_model::invite::{Invite, InviteChannel, InviteGuild, InviteStageInstance, TargetType};
 use twilight_model::user::User;
 
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+pub struct TransferStorage {
+    pub sender_id: String,
+    pub reciever_id: String,
+    pub channel_id: String,
+    pub guild_id: String,
+    pub amount: u64,
+    pub timestamp: Timestamp,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+pub struct Timer {
+    pub _id: Uuid,
+    host_id: String,
+    guild_id: String,
+    message_id: String,
+    channel_id: String,
+
+    pub start: Timestamp,
+    pub end: Timestamp,
+    pub active: bool,
+    // Data about the timer itself
+    title: String,
+    icon_url: String,
+}
+
+impl Timer {
+    pub fn get_channel_id(&self) -> ChannelId {
+        ChannelId(
+            self.channel_id
+                .parse::<std::num::NonZeroU64>()
+                .expect("Nonzero number"),
+        )
+    }
+
+    pub fn get_message_id(&self) -> MessageId {
+        MessageId(
+            self.message_id
+                .parse::<std::num::NonZeroU64>()
+                .expect("Nonzero number"),
+        )
+    }
+
+    pub fn get_content(&self) -> String {
+        format!("**{}**\n\n<t:{}>", self.title, self.end.as_secs())
+    }
+
+    pub fn get_duration_remaining(&self) -> TokioDuration {
+        TokioDuration::from_secs((self.end.as_secs() - Utc::now().timestamp()) as u64)
+    }
+}
+
 #[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct GuildPluginConfig {
-    pub id: std::num::NonZeroU64,
+    pub id: String,
     pub plugins: Vec<String>,
 }
 
