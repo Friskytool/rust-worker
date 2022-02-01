@@ -34,22 +34,22 @@ impl Plugin for DankMemer {
 
             if self.share_expr.is_match(&message.content) {
                 let caps = self.share_expr.captures(&message.content).unwrap();
-                let (sender, reciever_name, amount) = (
+                let (sender, receiver_name, amount) = (
                     caps.get(2).unwrap().as_str(),
                     caps.get(3).unwrap().as_str(),
                     caps.get(4).unwrap().as_str(),
                 );
 
-                let reciever = if let Some(reciever_id) = self.cache.get(reciever_name) {
-                    *reciever_id.value()
+                let receiver = if let Some(receiver_id) = self.cache.get(receiver_name) {
+                    *receiver_id.value()
                 } else if let Some(r) = ctx
                     .cache
                     .iter()
                     .users()
-                    .filter(|u| u.name.eq(reciever_name))
+                    .filter(|u| u.name.eq(receiver_name))
                     .next()
                 {
-                    self.cache.insert(reciever_name.to_string(), *r.key());
+                    self.cache.insert(receiver_name.to_string(), *r.key());
                     *r.key()
                 } else if let Some(id) = ctx
                     .http
@@ -64,13 +64,13 @@ impl Plugin for DankMemer {
                     .unwrap()
                     .into_iter()
                     .flat_map(|m: Message| m.mentions)
-                    .find(|m| m.name.eq(reciever_name))
+                    .find(|m| m.name.eq(receiver_name))
                     .map(|m| m.id)
                 {
-                    self.cache.insert(reciever_name.to_string(), id);
+                    self.cache.insert(receiver_name.to_string(), id);
                     id
                 } else {
-                    info!("Could not find user {}", reciever_name);
+                    info!("Could not find user {}", receiver_name);
                     return Ok(());
                 };
 
@@ -79,7 +79,7 @@ impl Plugin for DankMemer {
                 coll.insert_one(
                     dbg!(TransferStorage {
                         sender_id: sender.to_string(),
-                        reciever_id: reciever.to_string(),
+                        receiver_id: receiver.to_string(),
                         amount: amount.replace(",", "").parse()?,
                         timestamp: message.timestamp,
                         channel_id: message.channel_id.to_string(),

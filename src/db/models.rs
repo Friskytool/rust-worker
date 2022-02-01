@@ -11,7 +11,7 @@ use twilight_model::user::User;
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct TransferStorage {
     pub sender_id: String,
-    pub reciever_id: String,
+    pub receiver_id: String,
     pub channel_id: String,
     pub guild_id: String,
     pub amount: u64,
