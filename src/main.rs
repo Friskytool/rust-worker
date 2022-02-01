@@ -3,7 +3,6 @@ extern crate async_trait;
 extern crate date_time_parser;
 extern crate deadpool_redis;
 extern crate dotenv;
-extern crate redis;
 extern crate tracing;
 use crate::core::prelude::*;
 use std::sync::Arc;
@@ -55,6 +54,7 @@ async fn main() -> Result<()> {
         Box::new(plugins::InviteCounting::default()),
         Box::new(plugins::DateTransformer::default()),
         Box::new(plugins::DankMemer::default()),
+        Box::new(plugins::Timers::default()),
         Box::new(plugins::ServerIndexer()),
     ];
     let plugins: Arc<Vec<_>> = Arc::new(plugins.into_iter().map(|m| Arc::new(m)).collect());

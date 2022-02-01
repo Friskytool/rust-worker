@@ -3,7 +3,9 @@ use crate::core::Plugin;
 use crate::db::models::Timer;
 use chrono::{Duration as ChronoDuration, Utc};
 use futures::stream::TryStreamExt;
+use mongodb::bson::oid::ObjectId;
 use tokio::time::sleep;
+use tracing::info;
 use twilight_embed_builder::EmbedBuilder;
 
 #[derive(Clone, Debug)]
@@ -25,16 +27,17 @@ impl Plugin for Timers {
 
     async fn sync_db(&self, ctx: &Context) -> Result<()> {
         let timer_coll = ctx.db.collection::<Timer>("timers");
-        let timestamp = Utc::now() + ChronoDuration::seconds(30);
+        let timestamp = Utc::now() + ChronoDuration::seconds(60);
         let timestamp: bson::DateTime = timestamp.into();
 
         let mut timer_cursor = timer_coll
-            .find(doc! {"stop":doc!{"$lte":timestamp}, "active":true}, None)
+            .find(doc! {"active":true, "end": {"$lte":timestamp}}, None)
             .await
             .expect("Failed to find timers");
 
-        let mut results: Vec<mongodb::bson::Uuid> = Vec::new();
+        let mut results: Vec<ObjectId> = Vec::new();
         while let Some(timer) = timer_cursor.try_next().await? {
+            info!("{:#?}", &timer);
             results.push(timer._id);
             let ctx = ctx.clone();
             tokio::spawn(async move {
@@ -42,7 +45,9 @@ impl Plugin for Timers {
                     let http = ctx.http.clone();
                     http
                 };
+                info!("Remaining: {:#?}", timer.get_duration_remaining());
                 sleep(timer.get_duration_remaining()).await;
+                info!("Ending...");
                 let embed = EmbedBuilder::new()
                     .title("Timer Ended")
                     .description(format!("{}", timer.get_content()))
@@ -51,7 +56,7 @@ impl Plugin for Timers {
 
                 if let Err(why) = http
                     .update_message(timer.get_channel_id(), timer.get_message_id())
-                    .embeds(&vec![embed])
+                    .embeds(&vec![dbg!(embed)])
                     .expect("Could not construct update embed for timer")
                     .exec()
                     .await

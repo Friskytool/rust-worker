@@ -3,6 +3,7 @@ use std::result::Result as StdResult;
 pub use tracing::{event, Level};
 pub use twilight_gateway::Event;
 pub use twilight_model::id::{ChannelId, GuildId, RoleId, UserId};
+
 #[allow(dead_code)]
 pub mod colors {
     pub const MAIN: u32 = 0x5da9ff;

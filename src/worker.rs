@@ -95,13 +95,6 @@ impl Worker {
             redis_pool,
             plugin_config: plugin_config.clone(),
         };
-        {
-            let mut p_config = plugin_config.write().await;
-            p_config
-                .load_cache(ctx.clone())
-                .await
-                .expect("Failed to load plugin config cache");
-        }
 
         let handler = EventHandler::new(ctx.clone(), events);
 
@@ -133,7 +126,7 @@ impl Worker {
 
     async fn db_sync_handler(ctx: Context) {
         loop {
-            sleep(Duration::from_secs(30)).await;
+            sleep(Duration::from_secs(15)).await;
             for plugin in ctx.plugin_config.read().await.plugins.iter() {
                 if let Err(why) = plugin.sync_db(&ctx).await {
                     event!(Level::ERROR, "Failed to sync db: {:?}", why);

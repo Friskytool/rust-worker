@@ -1,4 +1,7 @@
 target
 tests
 .gitignore
+.git
 *.env
+*.rdb
+*.lock

@@ -1,12 +1,21 @@
 use crate::core::prelude::*;
+use bson::oid::ObjectId;
 use bson::DateTime;
-use mongodb::bson::Uuid;
 use serde::{Deserialize, Serialize};
 use tokio::time::Duration as TokioDuration;
 use twilight_model::datetime::Timestamp;
 use twilight_model::id::*;
 use twilight_model::invite::{Invite, InviteChannel, InviteGuild, InviteStageInstance, TargetType};
 use twilight_model::user::User;
+
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+pub struct ItemTrade {
+    pub date: DateTime,
+    pub amount: i64,
+    pub price: i64,
+    pub item_id: String,
+    pub value: f64,
+}
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct TransferStorage {
@@ -20,20 +29,21 @@ pub struct TransferStorage {
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct Timer {
-    pub _id: Uuid,
+    pub _id: ObjectId,
     host_id: String,
     guild_id: String,
     message_id: String,
     channel_id: String,
 
-    pub start: Timestamp,
-    pub end: Timestamp,
+    pub start: DateTime,
+    pub end: DateTime,
     pub active: bool,
     // Data about the timer itself
     title: String,
     icon_url: String,
 }
 
+#[allow(dead_code)]
 impl Timer {
     pub fn get_channel_id(&self) -> ChannelId {
         ChannelId(
@@ -52,11 +62,18 @@ impl Timer {
     }
 
     pub fn get_content(&self) -> String {
-        format!("**{}**\n\n<t:{}>", self.title, self.end.as_secs())
+        format!(
+            "**{}**\n\n<t:{}>",
+            self.title,
+            self.end.to_chrono().timestamp()
+        )
     }
 
     pub fn get_duration_remaining(&self) -> TokioDuration {
-        TokioDuration::from_secs((self.end.as_secs() - Utc::now().timestamp()) as u64)
+        TokioDuration::from_secs(std::cmp::max(
+            dbg!(self.end.to_chrono().timestamp() - Utc::now().timestamp()),
+            0,
+        ) as u64)
     }
 }
 

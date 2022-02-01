@@ -36,7 +36,7 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
                 let plugins: Vec<_> = {
                     let r1 = plugin_config.read().await;
 
-                    r1.get_plugins(guild_id).await
+                    r1.get_plugins(&ctx, guild_id).await
                 };
                 event!(
                     Level::DEBUG,
@@ -61,6 +61,35 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
             }
         }
 
+        Event::MessageUpdate(message) => {
+            if let Some(guild_id) = message.guild_id {
+                let plugins: Vec<_> = {
+                    let r1 = plugin_config.read().await;
+
+                    r1.get_plugins(&ctx, guild_id).await
+                };
+                event!(
+                    Level::DEBUG,
+                    "Got Plugins: ({:#?}) in {}",
+                    plugins,
+                    guild_id
+                );
+
+                for plugin in plugins.iter() {
+                    match plugin.on_event(event.clone(), ctx.clone()).await {
+                        Ok(()) => {}
+                        Err(e) => {
+                            event!(
+                                Level::ERROR,
+                                "error in plugin ({}): {:#?}",
+                                e,
+                                plugin.name()
+                            );
+                        }
+                    };
+                }
+            }
+        }
         // Guild Based events
         Event::GuildUpdate(update_event) => {
             let GuildUpdate(e) = *update_event.clone();
@@ -68,7 +97,7 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
             let plugins: Vec<_> = {
                 let r1 = plugin_config.read().await;
 
-                r1.get_plugins(guild_id).await
+                r1.get_plugins(&ctx, guild_id).await
             };
             event!(
                 Level::DEBUG,
@@ -97,7 +126,7 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
             let plugins: Vec<_> = {
                 let r1 = plugin_config.read().await;
 
-                r1.get_plugins(guild_id).await
+                r1.get_plugins(&ctx, guild_id).await
             };
             event!(
                 Level::DEBUG,
@@ -125,7 +154,7 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
             let plugins: Vec<_> = {
                 let r1 = plugin_config.read().await;
 
-                r1.get_plugins(id).await
+                r1.get_plugins(&ctx, id).await
             };
             event!(
                 Level::DEBUG,
@@ -154,7 +183,7 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
             let plugins: Vec<_> = {
                 let r1 = plugin_config.read().await;
 
-                r1.get_plugins(guild_id).await
+                r1.get_plugins(&ctx, guild_id).await
             };
             event!(
                 Level::DEBUG,
@@ -182,7 +211,7 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
             let plugins: Vec<_> = {
                 let r1 = plugin_config.read().await;
 
-                r1.get_plugins(guild_id).await
+                r1.get_plugins(&ctx, guild_id).await
             };
             event!(
                 Level::DEBUG,
@@ -210,7 +239,7 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
             let plugins: Vec<_> = {
                 let r1 = plugin_config.read().await;
 
-                r1.get_plugins(guild_id).await
+                r1.get_plugins(&ctx, guild_id).await
             };
             event!(
                 Level::DEBUG,
@@ -238,7 +267,7 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
             let plugins: Vec<_> = {
                 let r1 = plugin_config.read().await;
 
-                r1.get_plugins(guild_id).await
+                r1.get_plugins(&ctx, guild_id).await
             };
             event!(
                 Level::DEBUG,

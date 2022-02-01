@@ -1,7 +1,7 @@
+use deadpool_redis::redis::RedisError;
 use mongodb::error::Error as MongoError;
 use std::error::Error as StdError;
 use twilight_embed_builder::EmbedError;
-
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("Environment variable '{0}' not found.")]
@@ -50,4 +50,7 @@ pub enum Error {
 
     #[error("Failed to convert to std number")]
     ParseIntError(#[from] std::num::ParseIntError),
+
+    #[error("Redis command failed")]
+    RedisFailed(#[from] RedisError),
 }
