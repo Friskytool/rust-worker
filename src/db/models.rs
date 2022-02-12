@@ -39,8 +39,8 @@ pub struct Timer {
     pub end: DateTime,
     pub active: bool,
     // Data about the timer itself
-    title: String,
-    icon_url: String,
+    pub title: String,
+    pub icon_url: String,
 }
 
 #[allow(dead_code)]
@@ -71,7 +71,7 @@ impl Timer {
 
     pub fn get_duration_remaining(&self) -> TokioDuration {
         TokioDuration::from_secs(std::cmp::max(
-            dbg!(self.end.to_chrono().timestamp() - Utc::now().timestamp()),
+            self.end.to_chrono().timestamp() - Utc::now().timestamp(),
             0,
         ) as u64)
     }
