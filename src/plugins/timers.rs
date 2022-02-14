@@ -5,6 +5,7 @@ use chrono::{Duration as ChronoDuration, Utc};
 use futures::stream::TryStreamExt;
 use mongodb::bson::oid::ObjectId;
 use tokio::time::sleep;
+use tracing::error;
 use tracing::info;
 use twilight_embed_builder::EmbedBuilder;
 
@@ -31,19 +32,20 @@ impl Plugin for Timers {
         let timestamp: bson::DateTime = timestamp.into();
 
         let mut timer_cursor = timer_coll
-            .find(doc! {"active":true, "end": {"$lte":timestamp}}, None)
+            .find(doc! {"active":true, "end":{"$lte":timestamp}}, None)
             .await
             .expect("Failed to find timers");
 
         let mut results: Vec<ObjectId> = Vec::new();
         while let Some(timer) = timer_cursor.try_next().await? {
-            info!("{:#?}", &timer);
             results.push(timer._id);
             let ctx = ctx.clone();
+            // Editing the messages
             tokio::spawn(async move {
-                let http = {
+                let (http, mut conn) = {
                     let http = ctx.http.clone();
-                    http
+                    let conn = ctx.redis_pool.get().await.unwrap();
+                    (http, conn)
                 };
                 info!("Remaining: {:#?}", timer.get_duration_remaining());
                 sleep(timer.get_duration_remaining()).await;
@@ -58,11 +60,100 @@ impl Plugin for Timers {
                     .update_message(timer.get_channel_id(), timer.get_message_id())
                     .embeds(&vec![dbg!(embed)])
                     .expect("Could not construct update embed for timer")
+                    .components(Some(&[]))
+                    .expect("Could not construct update components for timer")
                     .exec()
                     .await
                 {
                     event!(Level::ERROR, "Failed to update timer message: {}", why);
-                };
+                } else {
+                    info!("Successfully updated timer message");
+                    http.create_message(timer.get_channel_id())
+                        .content(&format!("The timer for `{}` has ended", timer.title))
+                        .expect("Could not create content for end message")
+                        .components(&[Component::ActionRow(ActionRow {
+                            components: vec![Component::Button(Button {
+                                style: ButtonStyle::Link,
+                                url: Some(format!(
+                                    "https://discord.com/channels/{}/{}/{}",
+                                    timer.get_guild_id(),
+                                    timer.get_channel_id(),
+                                    timer.get_message_id()
+                                )),
+                                label: Some("Jump".to_string()),
+                                custom_id: None,
+                                disabled: false,
+                                emoji: None,
+                            })],
+                        })])
+                        .expect("Could not construct components for end message")
+                        .allowed_mentions(AllowedMentions::builder().build())
+                        .exec()
+                        .await
+                        .ok();
+                }
+
+                let users: Vec<String> = cmd("smembers")
+                    .arg(&[timer.get_store_key()])
+                    .query_async(&mut conn)
+                    .await
+                    .unwrap_or_else(|_| {
+                        error!("Failed to get users for timer {}", timer._id);
+                        Vec::new()
+                    });
+
+                if !users.is_empty() {
+                    let mut messages = Vec::new();
+                    for chunk in users.chunks(86) {
+                        // this is some random number that works
+                        let content = chunk
+                            .into_iter()
+                            .map(|u| format!("<@{}>", u))
+                            .collect::<Vec<String>>()
+                            .join("");
+
+                        match http
+                            .create_message(timer.get_channel_id())
+                            .content(&content)
+                            .expect("Could not create message")
+                            .exec()
+                            .await
+                        {
+                            Err(why) => {
+                                error!("Failed to send message: {}", why);
+                                break;
+                            }
+                            Ok(raw_msg) => {
+                                let msg = raw_msg.model().await.unwrap();
+                                messages.push(msg.id);
+                            }
+                        }
+                    }
+                    if !messages.is_empty() {
+                        if messages.len() == 1 {
+                            http.delete_message(timer.get_channel_id(), messages[0])
+                                .exec()
+                                .await
+                                .ok();
+                        } else {
+                            for chunk in messages.chunks(100) {
+                                if let Err(why) = http
+                                    .delete_messages(timer.get_channel_id(), chunk)
+                                    .exec()
+                                    .await
+                                {
+                                    error!("Failed to delete messages: {}", why);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    let _: () = cmd("del")
+                        .arg(&[timer.get_store_key()])
+                        .query_async(&mut conn)
+                        .await
+                        .expect("Redis cmd failed"); // clearly the command worked
+                }
             });
         }
         if !results.is_empty() {

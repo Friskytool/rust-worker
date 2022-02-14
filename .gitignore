@@ -1,3 +1,6 @@
 /target
 *.lock
 .env
+*.rdb
+*.yml
+.vscode

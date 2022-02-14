@@ -1,5 +1,4 @@
 use crate::core::prelude::*;
-use deadpool_redis::redis::cmd;
 use std::sync::Arc;
 use tracing::error;
 use twilight_model::id::GuildId;

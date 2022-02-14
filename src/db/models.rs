@@ -34,6 +34,7 @@ pub struct Timer {
     guild_id: String,
     message_id: String,
     channel_id: String,
+    store_key: String,
 
     pub start: DateTime,
     pub end: DateTime,
@@ -45,6 +46,14 @@ pub struct Timer {
 
 #[allow(dead_code)]
 impl Timer {
+    pub fn get_guild_id(&self) -> GuildId {
+        GuildId(
+            self.guild_id
+                .parse::<std::num::NonZeroU64>()
+                .expect("Nonzero number"),
+        )
+    }
+
     pub fn get_channel_id(&self) -> ChannelId {
         ChannelId(
             self.channel_id
@@ -59,6 +68,10 @@ impl Timer {
                 .parse::<std::num::NonZeroU64>()
                 .expect("Nonzero number"),
         )
+    }
+
+    pub fn get_store_key(&self) -> String {
+        format!("timers:{}", self.store_key)
     }
 
     pub fn get_content(&self) -> String {

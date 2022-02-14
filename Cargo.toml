@@ -30,6 +30,7 @@ tracing-subscriber = "0.3.1"
 dashmap = "5.0.0"
 sentry = "0.23.0"
 bson = {version = "2.1.0", features = ["chrono-0_4"]}
+meval = "0.2.0" 
 # for date_transformer plugin
 date_time_parser = "0.1.1"
 regex = "1.5.4"
