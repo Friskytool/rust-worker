@@ -14,12 +14,9 @@ twilight-model = "0.8.3"
 twilight-util = "0.8.2"
 twilight-standby = "0.8.2"
 twilight-embed-builder = "0.8.0"
-chrono = "0.4.19"
-deadpool-redis = {version = "0.10.0", features = ["serde", "rt_tokio_1"]}
 tokio = {version = "1.13.0", features = ["full"]}
 futures = "0.3.17"
 async-trait = "0.1.51"
-mongodb = {version = "2.1.0", features=['zstd-compression']}
 serde = {version = "1.0.130", features = ["derive"]}
 dotenv = "0.15.0"
 tracing  = "0.1.29"
@@ -27,10 +24,23 @@ config = "0.11.0"
 thiserror = "1.0.22"
 serde_json = "1.0.68"
 tracing-subscriber = "0.3.1"
-dashmap = "5.0.0"
-sentry = "0.23.0"
-bson = {version = "2.1.0", features = ["chrono-0_4"]}
-meval = "0.2.0" 
-# for date_transformer plugin
-date_time_parser = "0.1.1"
-regex = "1.5.4"
+sentry = "0.24.3"
+deadpool-redis = {version = "0.10.0", features = ["serde", "rt_tokio_1"]}
+chrono = {version = "0.4.19", optional = true}
+dashmap = {version = "5.0.0", optional = true}
+mongodb = {version = "2.1.0", features=['zstd-compression'], optional = true}
+bson = {version = "2.1.0", features = ["chrono-0_4"], optional = true}
+meval = {version = "0.2.0", optional = true}
+rand  = {version = "0.8.5", optional = true}
+date_time_parser = {version = "0.1.1", optional = true }
+regex = {version = "1.5.4", optional = true }
+
+[features]
+default = ["mongo"]
+mongo = ["mongodb", "bson"]
+giveaways = ["rand", "mongo", "chrono"]
+timers = ["mongo", "chrono"]
+date-transformer = ["date_time_parser", "regex", "chrono"]
+dank-memer = ["regex", "mongo"]
+math-solving = ["meval", "dashmap"]
+invite-counting = ["mongo"]

@@ -32,9 +32,18 @@ impl Plugin for MathSolving {
                 if !self.equation_expr.is_match(&msg.content) {
                     return Ok(());
                 }
+                let mut content = msg.content.clone();
+                let options = vec!["k", "m", "b", "t"];
 
-                if let Ok(result) = eval_str(&msg.content) {
-                    let emoji = RequestReactionType::Unicode { name: "🌃" };
+                for (i, option) in options.iter().enumerate() {
+                    content = content.replace(option, &format!("* (10^{})", i + 3));
+                }
+
+                if let Ok(result) = eval_str(&content) {
+                    if result.is_infinite() {
+                        return Ok(());
+                    }
+                    let emoji = RequestReactionType::Unicode { name: "➕" };
                     if let Ok(_) = ctx
                         .http
                         .create_reaction(msg.channel_id, msg.id, &emoji)
@@ -47,10 +56,17 @@ impl Plugin for MathSolving {
             }
 
             Event::ReactionAdd(reaction) => {
-                if let Some((_, val)) = self.cache.remove(&reaction.message_id) {
+                if let Some(member) = &reaction.member {
+                    if member.user.bot {
+                        return Ok(());
+                    }
+                }
+
+                if let Some((id, val)) = self.cache.remove(&reaction.message_id) {
                     ctx.http
                         .create_message(reaction.channel_id)
-                        .content(&format!("{val}"))?
+                        .content(&format!("`{val}`"))?
+                        .reply(id)
                         .exec()
                         .await
                         .ok();

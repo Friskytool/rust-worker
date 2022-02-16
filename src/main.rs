@@ -1,8 +1,10 @@
 #[macro_use]
 extern crate async_trait;
+#[cfg(feature = "dates")]
 extern crate date_time_parser;
 extern crate deadpool_redis;
 extern crate dotenv;
+#[cfg(feature = "math-solving")]
 extern crate meval;
 extern crate tracing;
 use crate::core::prelude::*;
@@ -51,13 +53,22 @@ async fn main() -> Result<()> {
     // Use intents to only receive guild message events.
 
     let plugins: Vec<Box<dyn core::Plugin>> = vec![
-        // Box::new(plugins::MessageCounting::default()),
-        // Box::new(plugins::InviteCounting::default()),
-        // Box::new(plugins::DateTransformer::default()),
-        // Box::new(plugins::DankMemer::default()),
-        // Box::new(plugins::Timers::default()),
-        // Box::new(plugins::ServerIndexer()),
-        Box::new(plugins::MathSolving::default()),
+        #[cfg(feature = "message-counting")]
+        Box::new(plugins::message_counting::MessageCounting::default()),
+        #[cfg(feature = "invite-counting")]
+        Box::new(plugins::invite_counting::InviteCounting::default()),
+        #[cfg(feature = "date-transformer")]
+        Box::new(plugins::date_transformer::DateTransformer::default()),
+        #[cfg(feature = "dank-memer")]
+        Box::new(plugins::dank_memer::DankMemer::default()),
+        #[cfg(feature = "timers")]
+        Box::new(plugins::timers::Timers::default()),
+        #[cfg(feature = "giveaways")]
+        Box::new(plugins::giveaways::Giveaways::default()),
+        #[cfg(feature = "server-indexer")]
+        Box::new(plugins::giveaways::ServerIndexer()),
+        #[cfg(feature = "math-solving")]
+        Box::new(plugins::math_solving::MathSolving::default()),
     ];
     let plugins: Arc<Vec<_>> = Arc::new(plugins.into_iter().map(|m| Arc::new(m)).collect());
 

@@ -164,22 +164,22 @@ impl Plugin for DankMemer {
                 } else {
                     return Ok(());
                 }
-
+                dbg!(&receiver_id);
                 let amount_row = embed.fields[0].value.to_string();
-                let amount = self.amount_expr.captures(&amount_row).unwrap()[1]
+                let amount = self.amount_expr.captures(dbg!(&amount_row)).unwrap()[1]
                     .to_string()
                     .replace(",", "");
                 let coll = ctx.db.collection::<TransferStorage>("dank_memer");
 
                 coll.insert_one(
-                    TransferStorage {
+                    dbg!(TransferStorage {
                         sender_id: sender_id.to_string(),
-                        receiver_id: receiver_id.to_string(),
+                        reciever_id: receiver_id.to_string(),
                         amount: amount.parse()?,
                         timestamp: message.timestamp,
                         channel_id: message.channel_id.to_string(),
                         guild_id: message.guild_id.unwrap().to_string(),
-                    },
+                    }),
                     InsertOneOptions::builder().build(),
                 )
                 .await?;
@@ -192,10 +192,7 @@ impl Plugin for DankMemer {
 impl Default for DankMemer {
     fn default() -> Self {
         Self {
-            amount_expr: Regex::new(
-                r"^(?:`|<:Reply:870665583593660476>\*\*)⏣? ([\d,ekmbt]+)(?:`|\*\*)$",
-            )
-            .unwrap(),
+            amount_expr: Regex::new(r"^`⏣ ([\d,]+)` \(\+ ⏣ ([\d,]+) tax\)$").unwrap(),
             item_expr: Regex::new(
                 r"^<:Reply:870665583593660476>\*\*([\d,]*)x\*\* <:(\w*):(?:\d*)> \*\*([\w ]*)\*\*$",
             )

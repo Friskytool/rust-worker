@@ -15,7 +15,9 @@ use twilight_model::{
 pub struct Context {
     pub cache: Arc<InMemoryCache>,
     pub cluster: Arc<Cluster>,
+    #[cfg(feature = "mongo")]
     pub mongo_client: Arc<mongodb::Client>,
+    #[cfg(feature = "mongo")]
     pub db: mongodb::Database,
     pub redis_pool: Arc<RedisPool>,
     pub http: Arc<HttpClient>,

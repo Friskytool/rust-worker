@@ -291,6 +291,35 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
             }
         }
 
+        Event::ReactionAdd(e) => {
+            if let Some(guild_id) = e.guild_id {
+                let plugins: Vec<_> = {
+                    let r1 = plugin_config.read().await;
+
+                    r1.get_plugins(&ctx, guild_id).await
+                };
+                event!(
+                    Level::DEBUG,
+                    "Got Plugins (reaction add): ({:#?}) in {}",
+                    plugins,
+                    guild_id
+                );
+
+                for plugin in plugins.iter() {
+                    match plugin.on_event(event.clone(), ctx.clone()).await {
+                        Ok(()) => {}
+                        Err(e) => {
+                            event!(
+                                Level::ERROR,
+                                "error in plugin ({}): {:#?}",
+                                e,
+                                plugin.name()
+                            );
+                        }
+                    };
+                }
+            }
+        }
         Event::ShardConnected(_) => {
             event!(Level::DEBUG, "Connected on shard {}", shard_id);
         }

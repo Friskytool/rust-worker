@@ -20,7 +20,9 @@ pub use crate::core::error::Error;
 pub type Result<T> = StdResult<T, Error>;
 pub use crate::core::Plugin;
 pub use crate::Context;
+#[cfg(feature = "chrono")]
 pub use chrono::prelude::*;
+#[cfg(feature = "mongo")]
 pub use mongodb::{bson, bson::doc};
 pub use std::sync::Arc;
 pub use tokio::sync::RwLock;

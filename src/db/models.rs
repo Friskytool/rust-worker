@@ -1,13 +1,22 @@
 use crate::core::prelude::*;
+#[cfg(feature = "mongo")]
 use bson::oid::ObjectId;
+#[cfg(feature = "mongo")]
 use bson::DateTime;
-use serde::{Deserialize, Serialize};
-use tokio::time::Duration as TokioDuration;
-use twilight_model::datetime::Timestamp;
-use twilight_model::id::*;
-use twilight_model::invite::{Invite, InviteChannel, InviteGuild, InviteStageInstance, TargetType};
-use twilight_model::user::User;
 
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "giveaways")]
+use std::collections::HashMap;
+use tokio::time::Duration as TokioDuration;
+use twilight_model::id::*;
+#[cfg(feature = "invite-counting")]
+use twilight_model::{
+    datetime::Timestamp,
+    invite::{Invite, InviteChannel, InviteGuild, InviteStageInstance, TargetType},
+    user::User,
+};
+
+#[cfg(feature = "dank-memer")]
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct ItemTrade {
     pub date: DateTime,
@@ -17,16 +26,85 @@ pub struct ItemTrade {
     pub value: f64,
 }
 
+#[cfg(feature = "dank-memer")]
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct TransferStorage {
     pub sender_id: String,
-    pub receiver_id: String,
+    pub reciever_id: String,
     pub channel_id: String,
     pub guild_id: String,
     pub amount: u64,
     pub timestamp: Timestamp,
 }
 
+#[cfg(feature = "giveaways")]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+pub struct Giveaway {
+    pub _id: ObjectId,
+    host_id: String,
+    guild_id: String,
+    message_id: String,
+    channel_id: String,
+    store_key: String,
+
+    pub start: DateTime,
+    pub end: DateTime,
+    pub active: bool,
+    // Data about the timer itself
+    pub prize: String,
+
+    pub requirements: Option<HashMap<String, String>>,
+    pub data: HashMap<String, String>,
+    pub winners: usize,
+}
+
+#[cfg(feature = "giveaways")]
+impl Giveaway {
+    pub fn get_guild_id(&self) -> GuildId {
+        GuildId(
+            self.guild_id
+                .parse::<std::num::NonZeroU64>()
+                .expect("Nonzero number"),
+        )
+    }
+
+    pub fn get_channel_id(&self) -> ChannelId {
+        ChannelId(
+            self.channel_id
+                .parse::<std::num::NonZeroU64>()
+                .expect("Nonzero number"),
+        )
+    }
+
+    pub fn get_message_id(&self) -> MessageId {
+        MessageId(
+            self.message_id
+                .parse::<std::num::NonZeroU64>()
+                .expect("Nonzero number"),
+        )
+    }
+
+    pub fn get_store_key(&self) -> String {
+        format!("giveaways:{}", self.store_key)
+    }
+
+    pub fn get_content(&self) -> String {
+        format!(
+            "**{}**\n\n<t:{}>",
+            self.prize,
+            self.end.to_chrono().timestamp()
+        )
+    }
+
+    pub fn get_duration_remaining(&self) -> TokioDuration {
+        TokioDuration::from_secs(std::cmp::max(
+            self.end.to_chrono().timestamp() - Utc::now().timestamp(),
+            0,
+        ) as u64)
+    }
+}
+
+#[cfg(feature = "timers")]
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct Timer {
     pub _id: ObjectId,
@@ -44,7 +122,7 @@ pub struct Timer {
     pub icon_url: String,
 }
 
-#[allow(dead_code)]
+#[cfg(feature = "timers")]
 impl Timer {
     pub fn get_guild_id(&self) -> GuildId {
         GuildId(
@@ -96,6 +174,7 @@ pub struct GuildPluginConfig {
     pub plugins: Vec<String>,
 }
 
+#[cfg(feature = "invite-counting")]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct UserInviteStorage {
     pub doctype: String,
@@ -110,6 +189,7 @@ pub struct UserInviteStorage {
     pub leaves_data: Vec<String>,
 }
 
+#[cfg(feature = "invite-counting")]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct MongoInvite {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -142,6 +222,7 @@ pub struct MongoInvite {
     pub uses: Option<u64>,
 }
 
+#[cfg(feature = "invite-counting")]
 impl From<Invite> for MongoInvite {
     fn from(invite: Invite) -> Self {
         Self {
@@ -164,13 +245,14 @@ impl From<Invite> for MongoInvite {
     }
 }
 
+#[cfg(feature = "invite-counting")]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct GuildInviteStorage {
     pub doctype: String,
     pub invites: Vec<MongoInvite>,
     pub guild_id: String,
 }
-
+#[cfg(feature = "invite-counting")]
 impl From<Vec<Invite>> for GuildInviteStorage {
     fn from(invites: Vec<Invite>) -> Self {
         let guild_id = invites
@@ -191,6 +273,7 @@ impl From<Vec<Invite>> for GuildInviteStorage {
     }
 }
 
+#[cfg(feature = "message-counting")]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct MessageCountingUserStorage {
     pub guild_id: String,
@@ -198,6 +281,7 @@ pub struct MessageCountingUserStorage {
     pub count: u32,
 }
 
+#[cfg(feature = "invite-counting")]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct JoinStorage {
     pub doctype: String,
@@ -207,6 +291,7 @@ pub struct JoinStorage {
     pub timestamp: DateTime,
 }
 
+#[cfg(feature = "invite-counting")]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct LeaveStorage {
     pub doctype: String,
