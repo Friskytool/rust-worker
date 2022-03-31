@@ -2,6 +2,7 @@ use deadpool_redis::redis::RedisError;
 use mongodb::error::Error as MongoError;
 use std::error::Error as StdError;
 use twilight_embed_builder::EmbedError;
+use twilight_validate::message::MessageValidationError;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("Environment variable '{0}' not found.")]
@@ -41,9 +42,7 @@ pub enum Error {
     TwilightHttpError(#[from] twilight_http::Error),
 
     #[error("TwilightHttp raised an error while creating a message.")]
-    TwilightMessageCreateFailed(
-        #[from] twilight_http::request::channel::message::create_message::CreateMessageError,
-    ),
+    TwilightMessageCreateFailed(#[from] MessageValidationError),
 
     #[error("Failed to deserialize data from discord")]
     DiscordDeserializeFailed(#[from] twilight_http::response::DeserializeBodyError),
@@ -53,4 +52,7 @@ pub enum Error {
 
     #[error("Redis command failed")]
     RedisFailed(#[from] RedisError),
+
+    #[error("TagScript processing failed")]
+    TagScriptError(#[from] tagscript::Error),
 }

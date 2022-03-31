@@ -51,7 +51,7 @@ impl Plugin for Giveaways {
                 sleep(giveaway.get_duration_remaining()).await;
                 info!("Ending...");
 
-                let users: Vec<UserId> = cmd("smembers")
+                let users: Vec<Id<UserMarker>> = cmd("smembers")
                     .arg(&[giveaway.get_store_key()])
                     .query_async(&mut conn)
                     .await
@@ -60,7 +60,7 @@ impl Plugin for Giveaways {
                         Vec::new()
                     })
                     .into_iter()
-                    .map(|user: String| UserId(user.parse().unwrap()))
+                    .map(|user: String| Id::new(user.parse().unwrap()))
                     .collect();
 
                 let winners = if !users.is_empty() {
@@ -88,7 +88,7 @@ impl Plugin for Giveaways {
 
                     winner_str = winners
                         .iter()
-                        .map(|user| format!("<@{}>", user.0))
+                        .map(|user| format!("<@{}>", user.get()))
                         .reduce(|acc, user| format!("{}, {}", acc, user))
                         .unwrap();
                     description += &format!("Winners: {}", winner_str);
@@ -105,7 +105,7 @@ impl Plugin for Giveaways {
 
                 if let Err(why) = http
                     .update_message(giveaway.get_channel_id(), giveaway.get_message_id())
-                    .embeds(&vec![dbg!(embed)])
+                    .embeds(Some(&[dbg!(embed)]))
                     .expect("Could not construct update embed for giveaway")
                     .components(Some(&[]))
                     .expect("Could not construct update components for giveaway")
@@ -137,7 +137,9 @@ impl Plugin for Giveaways {
                             })],
                         })])
                         .expect("Could not construct components for end message")
-                        .allowed_mentions(AllowedMentions::builder().user_ids(winners).build())
+                        .allowed_mentions(Some(
+                            &AllowedMentions::builder().user_ids(winners).build(),
+                        ))
                         .exec()
                         .await
                         .ok();

@@ -11,7 +11,7 @@ async fn get_id_from_name(
     receiver_name: &String,
     ctx: &Context,
     message: &Message,
-) -> Result<Option<UserId>> {
+) -> Result<Option<Id<UserMarker>>> {
     Ok(
         if let Some(receiver_id_val) = dank.cache.get(receiver_name) {
             Some(receiver_id_val.value().clone())
@@ -53,7 +53,7 @@ async fn get_id_from_name(
 pub struct DankMemer {
     pub amount_expr: Regex,
     pub item_expr: Regex,
-    pub cache: DashMap<String, UserId>,
+    pub cache: DashMap<String, Id<UserMarker>>,
 }
 
 #[async_trait]
@@ -156,7 +156,7 @@ impl Plugin for DankMemer {
             {
                 let receiver_text = embed.fields[2].name.to_string();
                 let receiver_name = &receiver_text[0..receiver_text.len() - 9].to_string();
-                let receiver_id: UserId;
+                let receiver_id: Id<UserMarker>;
                 if let Ok(Some(result)) =
                     get_id_from_name(&self, &receiver_name, &ctx, &message).await
                 {

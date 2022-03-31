@@ -7,8 +7,8 @@ use bson::DateTime;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "giveaways")]
 use std::collections::HashMap;
+
 use tokio::time::Duration as TokioDuration;
-use twilight_model::id::*;
 #[cfg(feature = "invite-counting")]
 use twilight_model::{
     datetime::Timestamp,
@@ -16,6 +16,20 @@ use twilight_model::{
     user::User,
 };
 
+#[cfg(feature = "utility")]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+pub struct AfkUser {
+    pub user_id: String,
+    pub message: String,
+    pub afk_since: DateTime,
+}
+
+#[cfg(feature = "utility")]
+impl AfkUser {
+    pub fn get_user_id(&self) -> Id<UserMarker> {
+        Id::new(self.user_id.clone().parse().unwrap())
+    }
+}
 #[cfg(feature = "dank-memer")]
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct ItemTrade {
@@ -53,39 +67,27 @@ pub struct Giveaway {
     // Data about the timer itself
     pub prize: String,
 
-    pub requirements: Option<HashMap<String, String>>,
+    // pub requirements: Option<HashMap<String, Vec<String>>>,
     pub data: HashMap<String, String>,
     pub winners: usize,
 }
 
 #[cfg(feature = "giveaways")]
 impl Giveaway {
-    pub fn get_guild_id(&self) -> GuildId {
-        GuildId(
-            self.guild_id
-                .parse::<std::num::NonZeroU64>()
-                .expect("Nonzero number"),
-        )
+    pub fn get_guild_id(&self) -> Id<GuildMarker> {
+        Id::new(self.guild_id.parse().expect("Nonzero number"))
     }
 
-    pub fn get_channel_id(&self) -> ChannelId {
-        ChannelId(
-            self.channel_id
-                .parse::<std::num::NonZeroU64>()
-                .expect("Nonzero number"),
-        )
+    pub fn get_channel_id(&self) -> Id<ChannelMarker> {
+        Id::new(self.channel_id.parse().expect("Nonzero number"))
     }
 
-    pub fn get_message_id(&self) -> MessageId {
-        MessageId(
-            self.message_id
-                .parse::<std::num::NonZeroU64>()
-                .expect("Nonzero number"),
-        )
+    pub fn get_message_id(&self) -> Id<MessageMarker> {
+        Id::new(self.message_id.parse().expect("Nonzero number"))
     }
 
     pub fn get_store_key(&self) -> String {
-        format!("giveaways:{}", self.store_key)
+        self.store_key.clone()
     }
 
     pub fn get_content(&self) -> String {
@@ -120,32 +122,25 @@ pub struct Timer {
     // Data about the timer itself
     pub title: String,
     pub icon_url: String,
+    pub end_message: String,
 }
 
 #[cfg(feature = "timers")]
 impl Timer {
-    pub fn get_guild_id(&self) -> GuildId {
-        GuildId(
-            self.guild_id
-                .parse::<std::num::NonZeroU64>()
-                .expect("Nonzero number"),
-        )
+    pub fn get_guild_id(&self) -> Id<GuildMarker> {
+        Id::new(self.guild_id.parse().expect("Nonzero number"))
     }
 
-    pub fn get_channel_id(&self) -> ChannelId {
-        ChannelId(
-            self.channel_id
-                .parse::<std::num::NonZeroU64>()
-                .expect("Nonzero number"),
-        )
+    pub fn get_channel_id(&self) -> Id<ChannelMarker> {
+        Id::new(self.channel_id.parse().expect("Nonzero number"))
     }
 
-    pub fn get_message_id(&self) -> MessageId {
-        MessageId(
-            self.message_id
-                .parse::<std::num::NonZeroU64>()
-                .expect("Nonzero number"),
-        )
+    pub fn get_message_id(&self) -> Id<MessageMarker> {
+        Id::new(self.message_id.parse().expect("Nonzero number"))
+    }
+
+    pub fn get_host_id(&self) -> Id<UserMarker> {
+        Id::new(self.host_id.parse().expect("Nonzero number"))
     }
 
     pub fn get_store_key(&self) -> String {
@@ -263,7 +258,7 @@ impl From<Vec<Invite>> for GuildInviteStorage {
             .guild
             .expect("Expected guild attached to invite")
             .id
-            .0
+            .get()
             .to_string();
         Self {
             doctype: "invite_storage".to_string(),

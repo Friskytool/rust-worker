@@ -4,6 +4,8 @@ use crate::core::Result;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct WorkerConfig {
+    pub rabbit_uri: String,
+    pub rabbit_queue: String,
     pub discord_token: String,
     pub application_id: u64,
     pub mongo_uri: String,

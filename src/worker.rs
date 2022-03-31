@@ -1,15 +1,16 @@
 use crate::context::Context;
 use crate::core::EventHandler;
 use crate::model::{PluginConfig, WorkerConfig};
+use lapin::options::{BasicConsumeOptions, QueueDeclareOptions};
+use lapin::{types::FieldTable, Connection, ConnectionProperties};
 use std::collections::HashMap;
 use std::sync::Arc;
+use tagscript::{block, Interpreter};
 use tokio::sync::RwLock;
 use tokio::time::{sleep, Duration};
 use tracing::{event, Level};
 use twilight_cache_inmemory::InMemoryCache;
-use twilight_gateway::cluster::{Cluster, ShardScheme};
 use twilight_http::Client as HttpClient;
-use twilight_model::gateway::Intents;
 // Databases
 use crate::core::prelude::*;
 use crate::db::{MongoClient, MongoClientOptions};
@@ -24,11 +25,7 @@ pub struct Worker {
 }
 
 impl Worker {
-    pub async fn new(
-        config: WorkerConfig,
-        plugins: Arc<Vec<Arc<Box<dyn Plugin>>>>,
-        intents: Intents,
-    ) -> Self {
+    pub async fn new(config: WorkerConfig, plugins: Arc<Vec<Arc<Box<dyn Plugin>>>>) -> Self {
         let http = Arc::new(HttpClient::new(config.discord_token.clone()));
         let cache = Arc::new(InMemoryCache::new());
 
@@ -73,30 +70,80 @@ impl Worker {
         let mut owners = HashMap::new();
         owners.insert(owner.id, Arc::new(owner));
 
-        let (cluster, events) = Cluster::builder(&config.discord_token, intents)
-            .shard_scheme(ShardScheme::Auto)
-            .http_client(http.clone())
-            .build()
+        let rabbit_conn = Connection::connect(&config.rabbit_uri, ConnectionProperties::default())
             .await
-            .unwrap_or_else(|err| panic!("Unabled to setup cluster: {}", err));
-        let cluster = Arc::new(cluster);
+            .expect("Failed to connect to RabbitMQ");
+        let rabbit_conn = Arc::new(rabbit_conn);
+
+        let channel = rabbit_conn
+            .create_channel()
+            .await
+            .expect("Could not create RabbitMQ channel");
+
+        let channel2 = rabbit_conn
+            .create_channel()
+            .await
+            .expect("Could not create RabbitMQ channel");
+
+        channel2
+            .queue_declare(
+                &config.rabbit_queue,
+                QueueDeclareOptions::default(),
+                FieldTable::default(),
+            )
+            .await
+            .expect("Could not initialize queue");
+
+        let consumer = channel
+            .basic_consume(
+                &config.rabbit_queue,
+                "gateway-worker",
+                BasicConsumeOptions::default(),
+                FieldTable::default(),
+            )
+            .await
+            .expect("Could not create RabbitMQ consumer");
+        // let (cluster, events) = Cluster::builder(config.discord_token.clone(), intents)
+        //     .shard_scheme(ShardScheme::Auto)
+        //     .http_client(http.clone())
+        //     .build()
+        //     .await
+        //     .unwrap_or_else(|err| panic!("Unabled to setup cluster: {}", err));
 
         let plugin_config = PluginConfig::new(plugins);
         let plugin_config = Arc::new(RwLock::new(plugin_config));
 
+        let interpreter = Arc::new(Interpreter::new(vec![
+            Box::new(block::AssignmentBlock {}),
+            Box::new(block::BreakBlock {}),
+            Box::new(block::AllBlock {}),
+            Box::new(block::AnyBlock {}),
+            Box::new(block::IfBlock {}),
+            Box::new(block::FiftyFiftyBlock {}),
+            Box::new(block::LooseVariableGetterBlock {}),
+            Box::new(block::MathBlock {}),
+            Box::new(block::RandomBlock {}),
+            Box::new(block::RangeBlock {}),
+            Box::new(block::ShortCutRedirectBlock {
+                redirect_name: "args".into(),
+            }),
+            Box::new(block::StopBlock {}),
+            Box::new(block::SubstringBlock {}),
+        ]));
         let ctx = Context {
             cache,
-            cluster,
             http,
             user,
             owners,
+            interpreter,
             mongo_client,
             db: mongo_db,
             redis_pool,
+            rabbit_conn: rabbit_conn.clone(),
             plugin_config: plugin_config.clone(),
         };
 
-        let handler = EventHandler::new(ctx.clone(), events);
+        let handler = EventHandler::new(ctx.clone(), consumer);
 
         Self {
             ctx,
@@ -106,11 +153,11 @@ impl Worker {
     }
 
     pub async fn start(&mut self) {
-        let cluster_spawn = self.ctx.cluster.clone();
-        event!(Level::DEBUG, "Starting Cluster");
-        let _cluster_handle = tokio::spawn(async move {
-            cluster_spawn.up().await;
-        });
+        // let cluster_spawn = self.ctx.cluster.clone();
+        // event!(Level::DEBUG, "Starting Cluster");
+        // let _cluster_handle = tokio::spawn(async move {
+        //     cluster_spawn.up().await;
+        // });
 
         let ctx = self.ctx.clone();
         let _db_sync_handle = tokio::spawn(async move {

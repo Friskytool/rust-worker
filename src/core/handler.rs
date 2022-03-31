@@ -1,30 +1,74 @@
 use crate::core::prelude::*;
 use crate::Context;
 use futures::stream::StreamExt;
-use twilight_gateway::cluster::Events;
-use twilight_gateway::Event;
+use lapin::options::BasicAckOptions;
+use lapin::Consumer;
+
+use serde::de::DeserializeSeed;
+use tracing::error;
+use twilight_model::gateway::event::{GatewayEvent, GatewayEventDeserializer};
 use twilight_model::gateway::payload::incoming::*;
+use twilight_model::gateway::OpCode;
 pub struct EventHandler {
-    events: Events,
+    consumer: Consumer,
     ctx: Context,
 }
 
 impl EventHandler {
-    pub fn new(ctx: Context, events: Events) -> Self {
-        Self { events, ctx }
+    pub fn new(ctx: Context, consumer: Consumer) -> Self {
+        Self { consumer, ctx }
     }
 
     pub async fn start(&mut self) {
-        while let Some((shard_id, event)) = self.events.next().await {
-            // If standby is used we would put it here
-            self.ctx.cache.update(&event);
+        while let Some(delivery) = self.consumer.next().await {
+            let mut delivery = delivery.expect("error in consumer");
 
-            tokio::spawn(handle_event(shard_id, event, self.ctx.clone()));
+            let (op, seq, event_type) = {
+                let json = std::str::from_utf8_mut(&mut delivery.data).expect("invalid utf8");
+                if let Some(deserializer) = GatewayEventDeserializer::from_json(json) {
+                    let (op, seq, event_type) = deserializer.into_parts();
+
+                    // Unfortunately lifetimes and mutability requirements
+                    // conflict here if we return an immutable reference to the
+                    // event type, so we're going to have to take ownership of
+                    // this if we don't want to do anything too dangerous. It
+                    // should be a good trade-off either way.
+                    // Via twilight-rs/gateway
+                    (op, seq, event_type.map(ToOwned::to_owned))
+                } else {
+                    error!(json = json, "received payload without opcode",);
+                    continue; // Shouldn't be doing this but gateway should be already verifying data
+                }
+            };
+
+            let gateway_event = if op == OpCode::HeartbeatAck as u8 {
+                GatewayEvent::HeartbeatAck
+            } else if op == OpCode::Reconnect as u8 {
+                GatewayEvent::Reconnect
+            } else {
+                // Json gateway deserializer from twilight
+
+                let gateway_deserializer =
+                    GatewayEventDeserializer::new(op, seq, event_type.as_deref());
+
+                let mut json_deserializer =
+                    serde_json::Deserializer::from_slice(&mut delivery.data);
+
+                gateway_deserializer
+                    .deserialize(&mut json_deserializer)
+                    .expect("Could not deserialize ws data to object")
+            };
+
+            let event = Event::from(gateway_event);
+
+            self.ctx.cache.update(&event);
+            delivery.ack(BasicAckOptions::default()).await.expect("ack"); // We've got the event the rest is up to sentry to monitor
+            tokio::spawn(handle_event(event, self.ctx.clone()));
         }
     }
 }
 
-async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
+async fn handle_event(event: Event, ctx: Context) -> Result<()> {
     let plugin_config = {
         let c = ctx.clone();
         c.plugin_config
@@ -150,7 +194,7 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
             }
         }
         Event::GuildDelete(delete_event) => {
-            let GuildDelete { id, .. } = *delete_event.clone();
+            let GuildDelete { id, .. } = delete_event.clone();
             let plugins: Vec<_> = {
                 let r1 = plugin_config.read().await;
 
@@ -321,7 +365,7 @@ async fn handle_event(shard_id: u64, event: Event, ctx: Context) -> Result<()> {
             }
         }
         Event::ShardConnected(_) => {
-            event!(Level::DEBUG, "Connected on shard {}", shard_id);
+            event!(Level::DEBUG, "Connected? (this shouldn't be printing)");
         }
 
         Event::MemberUpdate(_) => {}

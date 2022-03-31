@@ -1,9 +1,12 @@
+use std::collections::HashMap;
+
 use crate::core::prelude::*;
 use crate::core::Plugin;
 use crate::db::models::Timer;
 use chrono::{Duration as ChronoDuration, Utc};
 use futures::stream::TryStreamExt;
 use mongodb::bson::oid::ObjectId;
+use tagscript::Adapter;
 use tokio::time::sleep;
 use tracing::error;
 use tracing::info;
@@ -58,7 +61,7 @@ impl Plugin for Timers {
 
                 if let Err(why) = http
                     .update_message(timer.get_channel_id(), timer.get_message_id())
-                    .embeds(&vec![dbg!(embed)])
+                    .embeds(Some(&[embed]))
                     .expect("Could not construct update embed for timer")
                     .components(Some(&[]))
                     .expect("Could not construct update components for timer")
@@ -68,8 +71,33 @@ impl Plugin for Timers {
                     event!(Level::ERROR, "Failed to update timer message: {}", why);
                 } else {
                     info!("Successfully updated timer message");
+                    let mut seed_variables: HashMap<String, Adapter> = HashMap::new();
+                    seed_variables.insert("title".into(), Adapter::String(timer.title.clone()));
+                    seed_variables.insert(
+                        "host".into(),
+                        Adapter::String(format!("<@{}>", timer.get_host_id().get())),
+                    );
+                    seed_variables.insert(
+                        "channel".into(),
+                        Adapter::String(format!("<#{}>", timer.get_channel_id().get())),
+                    );
+                    seed_variables.insert(
+                        "link".into(),
+                        Adapter::String(format!(
+                            "<https://discord.com/channels/{}/{}/{}>",
+                            timer.get_guild_id().get(),
+                            timer.get_channel_id().get(),
+                            timer.get_message_id().get()
+                        )),
+                    );
+                    dbg!(&timer.end_message);
+                    dbg!(&seed_variables);
+                    let end_message = ctx
+                        .interpreter
+                        .process(timer.end_message.clone(), Some(seed_variables), Some(2000))
+                        .expect("Tagscript processing failed");
                     http.create_message(timer.get_channel_id())
-                        .content(&format!("The timer for `{}` has ended", timer.title))
+                        .content(&end_message.body.unwrap())
                         .expect("Could not create content for end message")
                         .components(&[Component::ActionRow(ActionRow {
                             components: vec![Component::Button(Button {
@@ -87,7 +115,7 @@ impl Plugin for Timers {
                             })],
                         })])
                         .expect("Could not construct components for end message")
-                        .allowed_mentions(AllowedMentions::builder().build())
+                        .allowed_mentions(Some(&AllowedMentions::builder().build()))
                         .exec()
                         .await
                         .ok();

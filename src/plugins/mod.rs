@@ -1,6 +1,6 @@
 #[cfg(feature = "dank-memer")]
 pub mod dank_memer;
-#[cfg(feature = "date-transform")]
+#[cfg(feature = "date-transformer")]
 pub mod date_transform;
 #[cfg(feature = "giveaways")]
 pub mod giveaways;
@@ -14,3 +14,5 @@ pub mod message_counting;
 pub mod server_indexer;
 #[cfg(feature = "timers")]
 pub mod timers;
+#[cfg(feature = "utility")]
+pub mod utility;

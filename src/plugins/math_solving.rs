@@ -4,12 +4,11 @@ use dashmap::DashMap;
 use meval::eval_str;
 use regex::Regex;
 use twilight_http::request::channel::reaction::RequestReactionType;
-use twilight_model::id::MessageId;
 
 #[derive(Debug, Clone)]
 pub struct MathSolving {
     pub equation_expr: Regex,
-    pub cache: DashMap<MessageId, f64>,
+    pub cache: DashMap<Id<MessageMarker>, f64>,
 }
 
 #[async_trait]
@@ -25,6 +24,7 @@ impl Plugin for MathSolving {
     async fn on_event(&self, event: Event, ctx: Context) -> Result<()> {
         match event {
             Event::MessageCreate(msg) => {
+                println!("{:#?}", msg);
                 if msg.author.bot || msg.content.is_empty() {
                     return Ok(());
                 }

@@ -42,10 +42,10 @@ impl Plugin for ServerIndexer {
                 .await?;
             }
             Event::GuildDelete(e) => {
-                let GuildDelete { id, unavailable } = *e;
+                let GuildDelete { id, unavailable } = e.clone();
                 if !unavailable {
                     let coll = ctx.db.collection::<Guild>("servers");
-                    coll.find_one_and_delete(doc! {"_id": id.0.get().to_string()}, None)
+                    coll.find_one_and_delete(doc! {"_id": id.get().to_string()}, None)
                         .await?;
                 }
             }

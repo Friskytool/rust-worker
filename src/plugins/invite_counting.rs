@@ -61,10 +61,10 @@ impl Plugin for InviteCounting {
                 let coll = ctx.db.collection::<GuildInviteStorage>("invites");
 
                 let storage = coll
-                        .find_one(doc! {"guild_id":member.guild_id.0.to_string(), "doctype":"invite_storage" }, None)
+                        .find_one(doc! {"guild_id":member.guild_id.get().to_string(), "doctype":"invite_storage" }, None)
                         .await?.unwrap_or_else(|| GuildInviteStorage {
                             doctype: "invite_storage".to_string(),
-                            guild_id: member.guild_id.0.to_string(),
+                            guild_id: member.guild_id.get().to_string(),
                             invites: Vec::<MongoInvite>::new(),
                         });
 
@@ -74,10 +74,10 @@ impl Plugin for InviteCounting {
                     event!(
                         Level::INFO,
                         "Updating invites for guild {}",
-                        member.guild_id.0
+                        member.guild_id.get()
                     );
                     coll.find_one_and_update(
-                            doc! { "doctype":"invite_storage", "guild_id":member.guild_id.0.to_string() },
+                            doc! { "doctype":"invite_storage", "guild_id":member.guild_id.get().to_string() },
                             doc! { "$set": { "invites": bson::to_bson(&invites).unwrap() } },
                             Some(FindOneAndUpdateOptions::builder().upsert(true).build()),
                         ).await?;
@@ -87,7 +87,7 @@ impl Plugin for InviteCounting {
                     event!(
                         Level::INFO,
                         "Updating cache for guild {}",
-                        member.guild_id.0
+                        member.guild_id.get()
                     );
                     let mut cache = cache.into_iter();
                     let possible: Vec<MongoInvite> = invites
@@ -121,9 +121,9 @@ impl Plugin for InviteCounting {
                     if let Some(user) = &invite.inviter {
                         let user_coll = ctx.db.collection::<UserInviteStorage>("invites");
                         let storage = user_coll.find_one_and_update(
-                                doc! { "doctype":"user_storage", "user_id":user.id.0.to_string(), "guild_id":member.guild_id.0.to_string() },
+                                doc! { "doctype":"user_storage", "user_id":user.id.get().to_string(), "guild_id":member.guild_id.get().to_string() },
                                 doc! {
-                                        "$set": { "user_id": user.id.get().to_string(), "guild_id": member.guild_id.0.to_string()},
+                                        "$set": { "user_id": user.id.get().to_string(), "guild_id": member.guild_id.get().to_string()},
                                         "$setOnInsert":{
                                             "regular":0,
                                             "fake":0,
@@ -146,25 +146,25 @@ impl Plugin for InviteCounting {
                             .any(|i| i == &member.user.id.get().to_string())
                         {
                             user_coll.find_one_and_update(
-                                    doc! { "user_id":user.id.0.to_string(), "guild_id":member.guild_id.0.to_string() },
+                                    doc! { "user_id":user.id.get().to_string(), "guild_id":member.guild_id.get().to_string() },
                                     doc! { "$pull": { "leaves_data": member.user.id.get().to_string() }, "$addToSet": { "regular_data": bson::to_bson(&invite).unwrap() } },
                                     None,
                                 ).await?;
                         } else if regular_ids.iter().any(|i| i == &member.user.id.get()) {
                             user_coll.find_one_and_update(
-                                        doc! { "user_id":user.id.0.to_string(), "guild_id":member.guild_id.0.to_string() },
+                                        doc! { "user_id":user.id.get().to_string(), "guild_id":member.guild_id.get().to_string() },
                                         doc! { "$inc": { "regular": 1, "fake":-1 } },
                                         None,
                                     ).await?;
-                        } else if user.id.0 == member.user.id.0 {
+                        } else if user.id.get() == member.user.id.get() {
                             user_coll.find_one_and_update(
-                                        doc! { "user_id":user.id.0.to_string(), "guild_id":member.guild_id.0.to_string() },
+                                        doc! { "user_id":user.id.get().to_string(), "guild_id":member.guild_id.get().to_string() },
                                         doc! { "$inc": { "regular": 1, "fake":1 }, "$push": { "regular_data": bson::to_bson(&invite).unwrap() } },
                                         None,
                                     ).await?;
                         } else {
                             user_coll.find_one_and_update(
-                                        doc! { "user_id":user.id.0.to_string(), "guild_id":member.guild_id.0.to_string() },
+                                        doc! { "user_id":user.id.get().to_string(), "guild_id":member.guild_id.get().to_string() },
                                         doc! { "$inc": { "regular": 1 }, "$push": { "regular_data": bson::to_bson(&invite).unwrap() } },
                                         None,
                                     ).await?;
