@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use tokio::time::Duration as TokioDuration;
+#[cfg(feature = "dank-memer")]
+use twilight_model::datetime::Timestamp;
 #[cfg(feature = "invite-counting")]
 use twilight_model::{
     datetime::Timestamp,

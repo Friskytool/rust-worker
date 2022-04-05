@@ -100,7 +100,7 @@ impl Plugin for DankMemer {
                     } else {
                         (fields[1].clone(), fields[0].clone())
                     };
-
+                    dbg!(&amount_field);
                     let price = self.amount_expr.captures(&amount_field.value).unwrap()[1]
                         .to_string()
                         .replace(",", "");

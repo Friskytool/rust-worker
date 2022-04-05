@@ -5,6 +5,7 @@ use lapin::options::{BasicConsumeOptions, QueueDeclareOptions};
 use lapin::{types::FieldTable, Connection, ConnectionProperties};
 use std::collections::HashMap;
 use std::sync::Arc;
+#[cfg(feature = "tagscript")]
 use tagscript::{block, Interpreter};
 use tokio::sync::RwLock;
 use tokio::time::{sleep, Duration};
@@ -113,6 +114,7 @@ impl Worker {
         let plugin_config = PluginConfig::new(plugins);
         let plugin_config = Arc::new(RwLock::new(plugin_config));
 
+        #[cfg(feature = "tagscript")]
         let interpreter = Arc::new(Interpreter::new(vec![
             Box::new(block::AssignmentBlock {}),
             Box::new(block::BreakBlock {}),
@@ -135,6 +137,7 @@ impl Worker {
             http,
             user,
             owners,
+            #[cfg(feature = "tagscript")]
             interpreter,
             mongo_client,
             db: mongo_db,

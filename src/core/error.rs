@@ -53,6 +53,7 @@ pub enum Error {
     #[error("Redis command failed")]
     RedisFailed(#[from] RedisError),
 
+    #[cfg(feature = "tagscript")]
     #[error("TagScript processing failed")]
     TagScriptError(#[from] tagscript::Error),
 }

@@ -27,7 +27,7 @@ impl Plugin for Giveaways {
     }
 
     async fn sync_db(&self, ctx: &Context) -> Result<()> {
-        let giveaway_coll = ctx.db.collection::<Giveaway>("giveaways");
+        let giveaway_coll = Arc::new(ctx.db.collection::<Giveaway>("giveaways"));
         let timestamp = Utc::now() + ChronoDuration::seconds(60);
         let timestamp: bson::DateTime = timestamp.into();
 
@@ -41,6 +41,8 @@ impl Plugin for Giveaways {
             results.push(giveaway._id);
             let ctx = ctx.clone();
             // Editing the messages
+
+            let gaw_coll = Arc::clone(&giveaway_coll);
             tokio::spawn(async move {
                 let (http, mut conn) = {
                     let http = ctx.http.clone();
@@ -63,6 +65,15 @@ impl Plugin for Giveaways {
                     .map(|user: String| Id::new(user.parse().unwrap()))
                     .collect();
 
+                // dump new users into mongo
+                gaw_coll
+                    .find_one_and_update(
+                        doc! {"_id": giveaway._id},
+                        doc! {"$addToSet": { "users": {"$each":  users.iter().map(|u| u.get().to_string()).collect::<Vec<String>>()  } } },
+                        None,
+                    )
+                    .await
+                    .ok();
                 let winners = if !users.is_empty() {
                     if users.len() > giveaway.winners {
                         users

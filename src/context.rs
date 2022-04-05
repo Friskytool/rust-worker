@@ -3,6 +3,7 @@ use deadpool_redis::Pool as RedisPool;
 use lapin::Connection;
 use std::collections::HashMap;
 use std::sync::Arc;
+#[cfg(feature = "tagscript")]
 use tagscript::Interpreter;
 use tokio::sync::RwLock;
 use twilight_cache_inmemory::InMemoryCache;
@@ -25,5 +26,6 @@ pub struct Context {
     pub user: CurrentUser,
     pub owners: HashMap<Id<UserMarker>, Arc<User>>,
     pub plugin_config: Arc<RwLock<PluginConfig>>,
+    #[cfg(feature = "tagscript")]
     pub interpreter: Arc<Interpreter>,
 }
